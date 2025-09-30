@@ -1,4 +1,7 @@
 {
-  "name": "Python 3 & Docker",
-  "image": "mcr.microsoft.com/devcontainers/python:3.11"
+    "name": "Python 3 & Docker",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    }
 }
