@@ -1,0 +1,6 @@
+# ComfyUI / model artifacts
+models/
+outputs/
+*.safetensors
+*.ckpt
+*.pth
