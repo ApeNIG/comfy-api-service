@@ -4,6 +4,6 @@
     "8000": { "label": "FastAPI", "onAutoForward": "openBrowser", "visibility": "public" },
     "8188": { "label": "ComfyUI", "onAutoForward": "openBrowser", "visibility": "public" }
   },
-  "postCreateCommand": "bash -lc 'chmod +x .devcontainer/bootstrap.sh; .devcontainer/bootstrap.sh'",
-  "postStartCommand": "bash -lc 'cd /workspaces/ComfyUI && if [ ! -d .venv ]; then python3 -m venv .venv; fi; . .venv/bin/activate && pgrep -af \"python .*main.py.*8188\" >/dev/null || nohup python main.py --cpu --listen 0.0.0.0 --port 8188 > /workspaces/comfy-data/comfy.log 2>&1 &'"
+  "postCreateCommand": "bash -lc 'chmod +x .devcontainer/bootstrap.sh; .devcontainer/bootstrap.sh 2>&1 | tee /workspaces/comfy-data/bootstrap.log'",
+  "postStartCommand": "bash -lc 'test -x /workspaces/ComfyUI/.venv/bin/python || .devcontainer/bootstrap.sh; pgrep -af \"python .*main.py.*8188\" >/dev/null || nohup /workspaces/ComfyUI/.venv/bin/python /workspaces/ComfyUI/main.py --cpu --listen 0.0.0.0 --port 8188 > /workspaces/comfy-data/comfy.log 2>&1 &'"
 }
