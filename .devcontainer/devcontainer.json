@@ -1,7 +1,8 @@
 {
-    "name": "Python 3 & Docker",
-    "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    }
+  "forwardPorts": [8000, 8188],
+  "portsAttributes": {
+    "8000": { "label": "FastAPI", "onAutoForward": "openBrowser", "visibility": "public" },
+    "8188": { "label": "ComfyUI", "onAutoForward": "openBrowser", "visibility": "public" }
+  },
+  "postStartCommand": "bash -lc 'cd /opt/ComfyUI && ([ -d .venv ] || python3 -m venv .venv); . .venv/bin/activate && nohup python main.py --cpu --listen 0.0.0.0 --port 8188 > /workspaces/comfy-data/comfy.log 2>&1 &'"
 }
