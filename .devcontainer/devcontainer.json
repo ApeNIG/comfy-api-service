@@ -1,8 +1,11 @@
 {
-  "forwardPorts": [8000, 8188],
-  "portsAttributes": {
-    "8000": { "label": "FastAPI", "onAutoForward": "openBrowser", "visibility": "public" },
-    "8188": { "label": "ComfyUI", "onAutoForward": "openBrowser", "visibility": "public" }
+  "name": "comfy-api-service",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
   },
-  "postStartCommand": "bash -lc 'chmod +x .devcontainer/startup.sh; .devcontainer/startup.sh'"
+  "workspaceFolder": "/workspaces/comfy-api-service",
+  "forwardPorts": [8000, 8188],
+  "postCreateCommand": "bash -lc 'chmod +x .devcontainer/*.sh && .devcontainer/bootstrap.sh || true'",
+  "postStartCommand": "bash -lc 'chmod +x .devcontainer/*.sh && .devcontainer/startup.sh'"
 }

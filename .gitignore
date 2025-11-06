@@ -1,6 +1,26 @@
-# ComfyUI / model artifacts
-models/
-outputs/
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# ComfyUI / model artifacts (only at root level)
+/models/
+/outputs/
 *.safetensors
 *.ckpt
 *.pth
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+/workspaces/comfy-data/
