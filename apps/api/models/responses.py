@@ -116,6 +116,7 @@ class ErrorDetail(BaseModel):
     code: str = Field(..., description="Error code")
     message: str = Field(..., description="Human-readable error message")
     details: Optional[dict[str, Any]] = Field(None, description="Additional error details")
+    request_id: Optional[str] = Field(None, description="Request ID for tracking")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -135,6 +136,7 @@ class ErrorResponse(BaseModel):
                             "field": "width",
                             "provided_value": 513
                         },
+                        "request_id": "abc-123-def-456",
                         "timestamp": "2025-11-06T12:00:00Z"
                     }
                 }

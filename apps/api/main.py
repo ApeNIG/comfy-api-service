@@ -9,12 +9,16 @@ enabling programmatic access to AI image generation capabilities.
 """
 
 import logging
-from fastapi import FastAPI
+from datetime import datetime
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from .routers import generate, health
+from .middleware.request_id import RequestIDMiddleware
+from .middleware.limit_upload_size import LimitUploadSizeMiddleware
+from .middleware.version_headers import VersionHeadersMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -87,7 +91,17 @@ app = FastAPI(
     }
 )
 
-# Configure CORS
+# Add middleware (order matters - first added = outermost)
+# 1. Request ID tracking (outermost - needs to wrap everything)
+app.add_middleware(RequestIDMiddleware)
+
+# 2. Version headers
+app.add_middleware(VersionHeadersMiddleware, version="1.0.1", service_name="ComfyUI API Service")
+
+# 3. Upload size limits
+app.add_middleware(LimitUploadSizeMiddleware, max_upload_size=10_485_760)  # 10MB
+
+# 4. CORS (allow cross-origin requests)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, restrict to specific origins
@@ -103,20 +117,40 @@ app.include_router(generate.router)
 
 # Global exception handler
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(request: Request, exc: Exception):
     """
     Global exception handler for unhandled errors.
+
+    Catches all unhandled exceptions and returns a consistent error response
+    with request tracking information.
     """
-    logger.exception(f"Unhandled exception: {exc}")
+    # Get request ID from request state
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    # Log the exception with context
+    logger.exception(
+        f"Unhandled exception",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "error_type": type(exc).__name__
+        }
+    )
+
+    # Return consistent error response
     return JSONResponse(
         status_code=500,
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred. Please try again later.",
-                "details": str(exc) if logger.level == logging.DEBUG else None
+                "details": str(exc) if logger.level == logging.DEBUG else None,
+                "request_id": request_id,
+                "timestamp": datetime.utcnow().isoformat()
             }
-        }
+        },
+        headers={"X-Request-ID": request_id}
     )
 
 
