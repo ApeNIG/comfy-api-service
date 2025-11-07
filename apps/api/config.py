@@ -40,19 +40,48 @@ class Settings(BaseSettings):
     # Feature Flags
     jobs_enabled: bool = True  # Enable async job queue
     websocket_enabled: bool = True  # Enable WebSocket progress updates
+    auth_enabled: bool = False  # Enable API key authentication (disable for development)
+    rate_limit_enabled: bool = False  # Enable rate limiting
 
     # API Configuration
     api_version: str = "1.0.1"
     service_name: str = "ComfyUI API Service"
     max_upload_size: int = 10_485_760  # 10MB
 
+    # Authentication
+    api_key_length: int = 32  # bytes (44 chars base64)
+    api_key_ttl: int = 86400 * 365  # 1 year
+
+    # Rate Limiting
+    rate_limit_window: int = 60  # seconds (1 minute window)
+
     # Development
     debug: bool = False
+    environment: str = "dev"  # dev, staging, prod
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
+
+# Role-based quotas (not from env)
+ROLE_QUOTAS = {
+    "free": {
+        "quota_daily": 10,
+        "quota_concurrent": 1,
+        "rate_limit_per_minute": 5
+    },
+    "pro": {
+        "quota_daily": 100,
+        "quota_concurrent": 3,
+        "rate_limit_per_minute": 20
+    },
+    "internal": {
+        "quota_daily": -1,  # unlimited
+        "quota_concurrent": 10,
+        "rate_limit_per_minute": -1  # unlimited
+    }
+}
 
 # Global settings instance
 settings = Settings()
