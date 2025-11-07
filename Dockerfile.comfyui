@@ -1,0 +1,60 @@
+# ComfyUI Docker Image for Production Use
+# Optimized for NVIDIA GPUs with CUDA 11.8 runtime (compatible with sm_61/Quadro P2000)
+
+FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+
+# Prevent interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Python 3.10 and system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    python3.10-venv \
+    git \
+    wget \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3.10 /usr/bin/python
+
+# Set working directory
+WORKDIR /opt
+
+# Clone ComfyUI
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git && \
+    cd ComfyUI && \
+    git checkout v0.2.2
+
+# Install Python dependencies
+WORKDIR /opt/ComfyUI
+
+# Install PyTorch with CUDA 11.8 support (compatible with sm_61/Quadro P2000)
+RUN pip install --no-cache-dir \
+    torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+
+# Install ComfyUI requirements
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install xformers for faster inference
+RUN pip install --no-cache-dir xformers
+
+# Create directories for models and outputs
+RUN mkdir -p /opt/ComfyUI/models/checkpoints \
+    /opt/ComfyUI/models/vae \
+    /opt/ComfyUI/models/loras \
+    /opt/ComfyUI/models/controlnet \
+    /opt/ComfyUI/models/embeddings \
+    /opt/ComfyUI/models/upscale_models \
+    /opt/ComfyUI/output
+
+# Expose ComfyUI port
+EXPOSE 8188
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8188/ || exit 1
+
+# Start ComfyUI
+CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]

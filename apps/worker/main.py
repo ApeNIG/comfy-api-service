@@ -14,7 +14,6 @@ from functools import partial
 
 from arq import cron
 from arq.connections import RedisSettings
-from arq.worker import Function
 
 from apps.api.services.redis_client import redis_client
 from apps.api.services.storage_client import storage_client
@@ -456,9 +455,7 @@ class WorkerSettings:
     """
 
     # Functions to register
-    functions = [
-        Function(generate_task, name="generate_task")
-    ]
+    functions = [generate_task]
 
     # Redis connection
     redis_settings = None  # Will be set dynamically below

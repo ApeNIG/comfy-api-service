@@ -9,6 +9,7 @@
 ✅ **Docker** installed on your host machine
 ✅ **Docker Compose** installed
 ✅ **8GB RAM** minimum
+✅ **(Optional) NVIDIA GPU** for image generation
 
 ---
 
