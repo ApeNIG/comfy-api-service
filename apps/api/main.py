@@ -15,10 +15,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-from .routers import generate, health, jobs, websocket, metrics
+from .routers import generate, health, jobs, websocket, metrics, admin
 from .middleware.request_id import RequestIDMiddleware
 from .middleware.limit_upload_size import LimitUploadSizeMiddleware
 from .middleware.version_headers import VersionHeadersMiddleware
+from .middleware.rate_limit import RateLimitMiddleware
 from .services.redis_client import redis_client
 from .services.job_queue import job_queue
 from .config import settings
@@ -157,10 +158,13 @@ app.add_middleware(RequestIDMiddleware)
 # 2. Version headers
 app.add_middleware(VersionHeadersMiddleware, version="1.0.1", service_name="ComfyUI API Service")
 
-# 3. Upload size limits
+# 3. Rate limiting (before auth, needs user info)
+app.add_middleware(RateLimitMiddleware)
+
+# 4. Upload size limits
 app.add_middleware(LimitUploadSizeMiddleware, max_upload_size=10_485_760)  # 10MB
 
-# 4. CORS (allow cross-origin requests)
+# 5. CORS (allow cross-origin requests)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, restrict to specific origins
@@ -175,6 +179,7 @@ app.include_router(generate.router)  # Synchronous endpoints (backwards compatib
 app.include_router(jobs.router)  # Async job queue endpoints
 app.include_router(websocket.router)  # WebSocket for real-time progress
 app.include_router(metrics.router)  # Prometheus metrics
+app.include_router(admin.router)  # Admin endpoints for user/key management
 
 
 # Global exception handler
