@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed in image)
+*.md
+!README.md
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Tests
+tests/
+*.test.py
+.pytest_cache/
+
+# CI/CD
+.github/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Models and outputs (too large)
+models/
+outputs/
+ComfyUI/models/
+ComfyUI/output/

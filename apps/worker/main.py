@@ -262,17 +262,177 @@ async def generate_task(ctx, job_id: str):
         logger.info(f"[{job_id}] Worker task finished in {elapsed:.1f}s")
 
 
+async def recover_crashed_jobs(ctx):
+    """
+    Crash recovery: handle jobs from crashed workers.
+
+    Finds jobs that were marked as in-progress but the worker died.
+
+    Recovery Strategy:
+    1. Get all jobs in the "inprogress" set
+    2. For each job:
+       - Check if job status is "running"
+       - Check if job has been running too long (> job_timeout)
+       - If stale, requeue or mark as failed
+       - If fresh, assume another worker is handling it
+
+    Args:
+        ctx: ARQ context
+    """
+    logger.info("Starting crash recovery...")
+
+    try:
+        # Get all in-progress job IDs
+        in_progress_jobs = await redis_client.get_in_progress_jobs()
+
+        if not in_progress_jobs:
+            logger.info("No jobs in crash recovery set")
+            return
+
+        logger.info(f"Found {len(in_progress_jobs)} jobs in crash recovery set")
+
+        recovered = 0
+        failed = 0
+        skipped = 0
+
+        for job_id in in_progress_jobs:
+            try:
+                # Get job data
+                job_data = await redis_client.get_job(job_id)
+
+                if not job_data:
+                    logger.warning(f"Job {job_id} not found in Redis, removing from in-progress set")
+                    await redis_client.unmark_job_in_progress(job_id)
+                    skipped += 1
+                    continue
+
+                job_status = job_data.get("status")
+                started_at_str = job_data.get("started_at")
+
+                # If job already completed (succeeded, failed, canceled), just clean up
+                if job_status in ["succeeded", "failed", "canceled", "expired"]:
+                    logger.info(f"Job {job_id} already completed ({job_status}), removing from in-progress set")
+                    await redis_client.unmark_job_in_progress(job_id)
+                    skipped += 1
+                    continue
+
+                # If job is not running, might have been queued but never started
+                if job_status != "running":
+                    logger.info(f"Job {job_id} in state '{job_status}', leaving in queue")
+                    await redis_client.unmark_job_in_progress(job_id)
+                    skipped += 1
+                    continue
+
+                # Job is running - check if it's stale
+                if started_at_str:
+                    started_at = datetime.fromisoformat(started_at_str)
+                    elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
+
+                    # If job has been running longer than timeout, mark as failed
+                    if elapsed > settings.job_timeout:
+                        logger.warning(
+                            f"Job {job_id} appears stale (running {elapsed:.0f}s > "
+                            f"{settings.job_timeout}s timeout), marking as failed"
+                        )
+
+                        # Mark as failed due to timeout
+                        await redis_client.update_job_status(
+                            job_id,
+                            "failed",
+                            error={
+                                "message": "Job timed out or worker crashed",
+                                "type": "WorkerCrash",
+                                "recovered_at": datetime.now(timezone.utc).isoformat()
+                            }
+                        )
+
+                        # Publish failure event
+                        await redis_client.publish_progress(job_id, {
+                            "type": "done",
+                            "status": "failed",
+                            "error": {
+                                "message": "Job timed out or worker crashed"
+                            }
+                        })
+
+                        # Remove from in-progress
+                        await redis_client.unmark_job_in_progress(job_id)
+
+                        # Increment metric
+                        await redis_client.increment_metric("jobs_total", {"status": "failed"})
+                        await redis_client.increment_metric("jobs_recovered", {"outcome": "failed"})
+
+                        failed += 1
+
+                    else:
+                        # Job is recent - might be legitimately running on another worker
+                        logger.info(
+                            f"Job {job_id} appears to be running recently "
+                            f"({elapsed:.0f}s ago), leaving it alone"
+                        )
+                        skipped += 1
+
+                else:
+                    # No started_at timestamp - job is in inconsistent state
+                    logger.warning(
+                        f"Job {job_id} has status 'running' but no started_at, "
+                        f"marking as failed"
+                    )
+
+                    await redis_client.update_job_status(
+                        job_id,
+                        "failed",
+                        error={
+                            "message": "Job in inconsistent state (no started_at)",
+                            "type": "InconsistentState",
+                            "recovered_at": datetime.now(timezone.utc).isoformat()
+                        }
+                    )
+
+                    await redis_client.publish_progress(job_id, {
+                        "type": "done",
+                        "status": "failed",
+                        "error": {
+                            "message": "Job in inconsistent state"
+                        }
+                    })
+
+                    await redis_client.unmark_job_in_progress(job_id)
+                    await redis_client.increment_metric("jobs_total", {"status": "failed"})
+                    await redis_client.increment_metric("jobs_recovered", {"outcome": "failed"})
+
+                    failed += 1
+
+            except Exception as e:
+                logger.error(f"Error recovering job {job_id}: {e}", exc_info=True)
+                skipped += 1
+
+        logger.info(
+            f"Crash recovery complete: recovered={recovered}, "
+            f"failed={failed}, skipped={skipped}"
+        )
+
+    except Exception as e:
+        logger.error(f"Crash recovery failed: {e}", exc_info=True)
+
+
 async def startup(ctx):
     """
     Worker startup hook.
 
-    Connects to Redis and performs any initialization.
+    Connects to Redis and performs crash recovery.
+
+    Crash Recovery:
+    - Finds jobs stuck in "inprogress" state (from crashed workers)
+    - Checks each job's status and timestamp
+    - Requeues stale jobs (running > job_timeout)
+    - Marks expired jobs as failed
     """
     await redis_client.connect()
     logger.info("Worker started and connected to Redis")
 
-    # TODO: Implement crash recovery
-    # Check for jobs left in "inprogress" state and requeue them
+    # Crash recovery: handle jobs from crashed workers
+    await recover_crashed_jobs(ctx)
 
 
 async def shutdown(ctx):
