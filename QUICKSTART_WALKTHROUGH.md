@@ -152,7 +152,7 @@ You'll see interactive Swagger UI with all available endpoints!
 
 ## Test the API (Quick Examples)
 
-### Example 1: Submit a Job
+### Example 1: Submit a Job (Without ComfyUI)
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/jobs \
@@ -160,16 +160,17 @@ curl -X POST http://localhost:8000/api/v1/jobs \
   -d '{
     "prompt": "A beautiful sunset over mountains",
     "width": 512,
-    "height": 512
+    "height": 512,
+    "steps": 10
   }'
 ```
 
 **Response:**
 ```json
 {
-  "job_id": "job_abc123xyz",
+  "job_id": "j_abc123xyz",
   "status": "queued",
-  "created_at": "2025-11-07T22:30:00Z"
+  "created_at": "2025-11-07T22:30:00.123456Z"
 }
 ```
 
@@ -177,20 +178,122 @@ curl -X POST http://localhost:8000/api/v1/jobs \
 
 ```bash
 # Replace JOB_ID with the ID from step 1
-curl http://localhost:8000/api/v1/jobs/job_abc123xyz
+curl http://localhost:8000/api/v1/jobs/j_abc123xyz
+```
+
+**Response (without ComfyUI):**
+```json
+{
+  "job_id": "j_abc123xyz",
+  "status": "failed",
+  "error": "ComfyUI backend is not available",
+  "created_at": "2025-11-07T22:30:00.123456Z"
+}
+```
+
+**Expected:** Job will fail because ComfyUI isn't running. This is normal!
+
+---
+
+## With ComfyUI Running (Actual Image Generation)
+
+If you've started ComfyUI (see [COMFYUI_SETUP_GUIDE.md](COMFYUI_SETUP_GUIDE.md)), you can generate real images:
+
+### Example 3: Submit Job with ComfyUI
+
+```bash
+curl -X POST http://localhost:8000/api/v1/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "A beautiful sunset over mountains, golden hour",
+    "width": 512,
+    "height": 512,
+    "steps": 10,
+    "model": "v1-5-pruned-emaonly.safetensors"
+  }'
 ```
 
 **Response:**
 ```json
 {
-  "job_id": "job_abc123xyz",
-  "status": "failed",
-  "error": "ComfyUI backend is not available",
-  "created_at": "2025-11-07T22:30:00Z"
+  "job_id": "j_997a726a1664",
+  "status": "queued",
+  "created_at": "2025-11-08T10:15:30.456789Z"
 }
 ```
 
-**Expected:** Job will fail because ComfyUI isn't running. This is normal!
+### Example 4: Monitor Job Progress
+
+**GPU Mode:** Takes 3-5 seconds
+**CPU Mode:** Takes 8-10 minutes for 512x512 with 10 steps
+
+```bash
+# Check status every few seconds
+curl http://localhost:8000/api/v1/jobs/j_997a726a1664
+```
+
+**Response (processing):**
+```json
+{
+  "job_id": "j_997a726a1664",
+  "status": "processing",
+  "created_at": "2025-11-08T10:15:30.456789Z"
+}
+```
+
+**Response (succeeded):**
+```json
+{
+  "job_id": "j_997a726a1664",
+  "status": "succeeded",
+  "created_at": "2025-11-08T10:15:30.456789Z",
+  "completed_at": "2025-11-08T10:24:24.789012Z",
+  "result": {
+    "artifacts": [
+      {
+        "url": "http://localhost:9000/comfyui-artifacts/jobs/j_997a726a1664/image_0.png?...",
+        "seed": 123456789,
+        "width": 512,
+        "height": 512,
+        "meta": {}
+      }
+    ]
+  }
+}
+```
+
+### Example 5: Download the Generated Image
+
+Copy the artifact URL from the response and:
+
+**Option 1: Browser**
+- Paste the URL into your browser
+- Image will download or display
+
+**Option 2: Command Line**
+```bash
+# Save the image locally
+curl "http://localhost:9000/comfyui-artifacts/jobs/j_997a726a1664/image_0.png?..." \
+  -o generated_image.png
+
+# Open the image
+# Windows: start generated_image.png
+# Mac: open generated_image.png
+# Linux: xdg-open generated_image.png
+```
+
+### Example 6: Check Worker Logs (Debug)
+
+```bash
+# See what the worker is doing
+docker compose logs -f worker
+
+# You should see:
+# [j_997a726a1664] Downloading image from: http://comfyui:8188/view?...
+# [j_997a726a1664] Downloaded 404202 bytes
+# [j_997a726a1664] Uploaded 404202 bytes to MinIO: jobs/j_997a726a1664/image_0.png
+# [j_997a726a1664] Artifact ready: jobs/j_997a726a1664/image_0.png
+```
 
 ---
 

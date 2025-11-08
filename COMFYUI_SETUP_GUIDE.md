@@ -209,6 +209,172 @@ docker-compose restart api worker
 
 ---
 
+## Option 4: CPU Mode (Fallback for Unsupported GPUs)
+
+### When to Use CPU Mode
+
+Use CPU mode if:
+- ❌ No NVIDIA GPU available
+- ❌ GPU compute capability too old (< 7.0 required for PyTorch 2.0+)
+- ❌ NVIDIA Docker runtime not working
+- ✅ You want to test the API without GPU
+
+**Example:** Quadro P2000 has compute capability 6.1, which PyTorch 2.0.1 doesn't support. CPU mode is the solution.
+
+### Performance Expectations
+
+**CPU mode is 10-20x slower than GPU:**
+
+| Image Size | Steps | GPU Time | CPU Time |
+|------------|-------|----------|----------|
+| 512x512 | 10 | ~3s | ~9 min |
+| 512x512 | 20 | ~5s | ~18 min |
+| 1024x1024 | 20 | ~15s | ~60 min |
+
+**Recommendation:** Use 512x512 with 10-15 steps for testing in CPU mode.
+
+### Enabling CPU Mode
+
+**Already configured in docker-compose.yml:**
+
+```yaml
+comfyui:
+  image: ghcr.io/ai-dock/comfyui:latest
+  command: /opt/ai-dock/bin/supervisor-comfyui.sh --cpu
+  # ... rest of config
+```
+
+The `--cpu` flag enables CPU-only mode.
+
+### Configuration Changes for CPU Mode
+
+**1. Increase Timeout** (already done in commit b954fe3)
+
+[apps/api/config.py:38](apps/api/config.py#L38):
+```python
+comfyui_timeout: float = 600.0  # 10 minutes for CPU mode
+```
+
+**2. Reduce Steps for Testing**
+
+When testing in CPU mode, use fewer steps:
+
+```json
+{
+  "prompt": "A beautiful sunset",
+  "width": 512,
+  "height": 512,
+  "steps": 10,
+  "model": "v1-5-pruned-emaonly.safetensors"
+}
+```
+
+### Starting ComfyUI in CPU Mode
+
+```bash
+# Start ComfyUI with CPU flag (already configured)
+docker compose up -d comfyui
+
+# Monitor startup (first time downloads models)
+docker compose logs -f comfyui
+
+# Wait for: "Starting server..."
+# Takes 2-3 minutes on first run
+```
+
+### Verifying CPU Mode is Active
+
+```bash
+# Check ComfyUI logs
+docker compose logs comfyui | grep cpu
+
+# You should see: "Running in CPU mode"
+```
+
+### Testing CPU Mode
+
+**Submit a fast test job (10 steps):**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "A sunset over mountains",
+    "width": 512,
+    "height": 512,
+    "steps": 10
+  }'
+```
+
+**Expected timeline:**
+- Job accepted: Immediately
+- Job started: Within 5 seconds
+- Job completed: 8-10 minutes later
+- Image size: ~400KB PNG
+
+**Check status:**
+
+```bash
+# Replace JOB_ID with your actual job ID
+curl http://localhost:8000/api/v1/jobs/JOB_ID
+
+# Status progression:
+# "queued" → "processing" → "succeeded" (after ~9 minutes)
+```
+
+### CPU Mode Benchmarks (Verified)
+
+**Hardware:** Quadro P2000 (compute 6.1, unsupported by PyTorch 2.0+)
+
+**Test Results:**
+- Model: v1-5-pruned-emaonly.safetensors
+- Resolution: 512x512
+- Steps: 10
+- Time: 534 seconds (~9 minutes)
+- Output: 404,202 bytes (395 KB PNG)
+- Status: succeeded ✅
+
+### Troubleshooting CPU Mode
+
+**Issue: "CUDA out of memory" in CPU mode**
+
+This shouldn't happen in CPU mode. Check:
+```bash
+docker compose logs comfyui | grep -i "cpu\|cuda"
+```
+
+Verify `--cpu` flag is present in the command.
+
+**Issue: Jobs taking > 15 minutes**
+
+This is normal for:
+- Steps > 15
+- Resolution > 512x512
+- Complex prompts
+
+Reduce parameters:
+```json
+{
+  "steps": 10,
+  "width": 512,
+  "height": 512
+}
+```
+
+**Issue: Jobs timing out at 10 minutes**
+
+The timeout is configured for 600s (10 minutes). For 20-step generations:
+
+```bash
+# Temporarily increase timeout in .env
+COMFYUI_TIMEOUT=1200  # 20 minutes
+
+# Restart services
+docker compose restart api worker
+```
+
+---
+
 ## Troubleshooting
 
 ### Issue 1: "docker: Error response from daemon: could not select device driver"
