@@ -129,20 +129,34 @@ async def generate_task(ctx, job_id: str):
 
         artifacts = []
 
-        # Handle single or multiple images
-        images_data = result.images if hasattr(result, 'images') else [result]
-
-        for idx, image_data in enumerate(images_data):
-            object_name = f"jobs/{job_id}/image_{idx}.png"
+        # Download image from ComfyUI
+        if result.image_url:
+            object_name = f"jobs/{job_id}/image_0.png"
 
             # Upload image bytes to MinIO/S3
             try:
-                # Assuming image_data is bytes from ComfyUI
+                # Download image from ComfyUI using absolute URL
+                logger.info(f"[{job_id}] Downloading image from: {result.image_url}")
+
+                import httpx
+                async with httpx.AsyncClient(timeout=60.0) as http_client:
+                    response = await http_client.get(result.image_url)
+                    response.raise_for_status()
+                    image_bytes = response.content
+
+                if not image_bytes:
+                    raise RuntimeError(f"Downloaded 0 bytes from {result.image_url}")
+
+                logger.info(f"[{job_id}] Downloaded {len(image_bytes)} bytes")
+
+                # Upload to storage
                 storage_client.upload_bytes(
                     object_name,
-                    image_data if isinstance(image_data, bytes) else b"",  # TODO: Handle actual image bytes
+                    image_bytes,
                     content_type="image/png"
                 )
+
+                logger.info(f"[{job_id}] Uploaded {len(image_bytes)} bytes to MinIO: {object_name}")
 
                 # Generate presigned URL (1 hour TTL from settings)
                 url = storage_client.get_presigned_url(
@@ -164,11 +178,11 @@ async def generate_task(ctx, job_id: str):
                     "url": url
                 })
 
-                logger.info(f"[{job_id}] Uploaded artifact {idx}: {object_name}")
+                logger.info(f"[{job_id}] Artifact ready: {object_name}")
 
             except Exception as e:
-                logger.error(f"[{job_id}] Failed to upload artifact {idx}: {e}")
-                # Continue with other artifacts even if one fails
+                logger.error(f"[{job_id}] Failed to download/upload image: {e}")
+                raise  # Re-raise since we only have one image
 
         if not artifacts:
             raise RuntimeError("No artifacts were successfully uploaded")

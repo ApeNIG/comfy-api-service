@@ -8,7 +8,7 @@ from enum import Enum
 class SamplerType(str, Enum):
     """Available sampler types in ComfyUI."""
     EULER = "euler"
-    EULER_A = "euler_a"
+    EULER_A = "euler_ancestral"
     HEUN = "heun"
     DPM_2 = "dpm_2"
     DPM_2_A = "dpm_2_a"
@@ -75,7 +75,7 @@ class GenerateImageRequest(BaseModel):
     sampler: SamplerType = Field(
         default=SamplerType.EULER_A,
         description="Sampling algorithm to use",
-        examples=["euler_a", "dpm_plus_plus_2m"]
+        examples=["euler_ancestral", "dpm_plus_plus_2m"]
     )
 
     seed: Optional[int] = Field(
@@ -86,9 +86,9 @@ class GenerateImageRequest(BaseModel):
     )
 
     model: str = Field(
-        default="sd_xl_base_1.0.safetensors",
+        default="v1-5-pruned-emaonly.safetensors",
         description="Model checkpoint to use",
-        examples=["sd_xl_base_1.0.safetensors", "v1-5-pruned-emaonly.safetensors"]
+        examples=["v1-5-pruned-emaonly.safetensors", "sd_xl_base_1.0.safetensors"]
     )
 
     batch_size: int = Field(

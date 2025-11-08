@@ -115,15 +115,32 @@ class ComfyUIClient:
         """
         Check if ComfyUI service is available.
 
+        Uses retry logic with multiple endpoints to ensure robust connectivity.
+        Creates its own HTTP client to avoid dependency on context manager.
+
         Returns:
             True if service is healthy, False otherwise
         """
-        try:
-            response = await self.client.get("/system_stats")
-            return response.status_code == 200
-        except Exception as e:
-            logger.error(f"Health check failed: {e}")
-            return False
+        endpoints = ["/queue", "/system_stats", "/"]
+
+        async with httpx.AsyncClient(base_url=self.base_url, timeout=5.0) as health_client:
+            for attempt in range(5):
+                for endpoint in endpoints:
+                    try:
+                        response = await health_client.get(endpoint)
+                        if response.status_code == 200:
+                            logger.debug(f"Health check succeeded on {endpoint} (attempt {attempt + 1})")
+                            return True
+                    except Exception as e:
+                        logger.debug(f"Health check failed for {endpoint} (attempt {attempt + 1}): {e}")
+                        pass
+
+                # Exponential backoff
+                if attempt < 4:  # Don't sleep on last attempt
+                    await asyncio.sleep(0.6 * (attempt + 1))
+
+        logger.error("Health check failed after all retry attempts")
+        return False
 
     async def get_models(self) -> list[str]:
         """
@@ -405,9 +422,11 @@ class ComfyUIClient:
             history: History data from ComfyUI
 
         Returns:
-            Image URL or None if not found
+            Absolute image URL or None if not found
         """
         try:
+            from urllib.parse import quote
+
             # Navigate through history structure to find saved images
             outputs = history.get("outputs", {})
 
@@ -420,11 +439,11 @@ class ComfyUIClient:
                         subfolder = image_info.get("subfolder", "")
                         image_type = image_info.get("type", "output")
 
-                        # Construct URL to view the image
+                        # Construct absolute URL to view the image
                         if filename:
-                            url = f"/view?filename={filename}&type={image_type}"
+                            url = f"{self.base_url}/view?filename={quote(filename)}&type={quote(image_type)}"
                             if subfolder:
-                                url += f"&subfolder={subfolder}"
+                                url += f"&subfolder={quote(subfolder)}"
                             return url
 
             return None

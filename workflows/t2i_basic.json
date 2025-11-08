@@ -4,7 +4,7 @@
       "seed": 42,
       "steps": 20,
       "cfg": 7.0,
-      "sampler_name": "euler_a",
+      "sampler_name": "euler_ancestral",
       "scheduler": "normal",
       "denoise": 1.0,
       "model": ["4", 0],

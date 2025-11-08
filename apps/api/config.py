@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # ComfyUI Configuration
     comfyui_url: str = "http://localhost:8188"
-    comfyui_timeout: float = 300.0
+    comfyui_timeout: float = 600.0
 
     # Feature Flags
     jobs_enabled: bool = True  # Enable async job queue
