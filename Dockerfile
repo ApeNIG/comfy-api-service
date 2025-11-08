@@ -42,6 +42,7 @@ ENV PATH="/root/.local/bin:$PATH"
 
 # Copy application code
 COPY apps ./apps
+COPY workflows ./workflows
 COPY pyproject.toml poetry.lock ./
 
 # Create non-root user

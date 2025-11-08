@@ -5,7 +5,13 @@
     "context": ".."
   },
   "workspaceFolder": "/workspaces/comfy-api-service",
-  "forwardPorts": [8000, 8188],
+  "forwardPorts": [8000, 8188, 6379, 9000, 9001],
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
   "postCreateCommand": "bash -lc 'chmod +x .devcontainer/*.sh && .devcontainer/bootstrap.sh || true'",
   "postStartCommand": "bash -lc 'chmod +x .devcontainer/*.sh && .devcontainer/startup.sh'"
 }

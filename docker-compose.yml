@@ -43,15 +43,16 @@ services:
 
   # ComfyUI backend for image generation
   comfyui:
-    image: yanwk/comfyui-boot:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.comfyui
     container_name: comfyui-backend
     ports:
       - "8188:8188"
-    environment:
-      - CLI_ARGS=--listen 0.0.0.0 --port 8188
     volumes:
       - comfyui_models:/opt/ComfyUI/models
       - comfyui_output:/opt/ComfyUI/output
+    command: ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--cpu"]
     deploy:
       resources:
         reservations:
@@ -60,11 +61,11 @@ services:
               count: all
               capabilities: [gpu]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8188/system_stats"]
+      test: ["CMD", "curl", "-f", "http://localhost:8188/"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
     restart: unless-stopped
     networks:
       - comfyui-network
@@ -109,7 +110,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: comfyui-worker
-    command: poetry run arq apps.worker.main.WorkerSettings
+    command: python -m arq apps.worker.main.WorkerSettings
     environment:
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=minio:9000

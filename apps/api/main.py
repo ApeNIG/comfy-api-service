@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-from .routers import generate, health, jobs, websocket, metrics, admin
+from .routers import generate, health, jobs, websocket, metrics, admin, monitoring
 from .middleware.request_id import RequestIDMiddleware
 from .middleware.limit_upload_size import LimitUploadSizeMiddleware
 from .middleware.version_headers import VersionHeadersMiddleware
@@ -180,6 +180,7 @@ app.include_router(jobs.router)  # Async job queue endpoints
 app.include_router(websocket.router)  # WebSocket for real-time progress
 app.include_router(metrics.router)  # Prometheus metrics
 app.include_router(admin.router)  # Admin endpoints for user/key management
+app.include_router(monitoring.router)  # Cost tracking and monitoring
 
 
 # Global exception handler
