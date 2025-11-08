@@ -4,14 +4,37 @@ import httpx
 import json
 import uuid
 import asyncio
+import os
 from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
+from prometheus_client import Counter, Histogram, Gauge
 
 from ..models.requests import GenerateImageRequest
 from ..models.responses import ImageResponse, JobStatus, ImageMetadata
 
 logger = logging.getLogger(__name__)
+
+# Prometheus metrics
+GENERATION_TOTAL = Counter(
+    "generation_total",
+    "Total image generations",
+    ["status", "model"]
+)
+GENERATION_LATENCY = Histogram(
+    "generation_seconds",
+    "Image generation latency in seconds",
+    buckets=(2, 4, 8, 12, 20, 30, 45, 60, 120, 300)
+)
+COMFY_QUEUE_DEPTH = Gauge(
+    "comfy_queue_depth",
+    "Approximate ComfyUI queue depth"
+)
+COMFY_REQUEST_TOTAL = Counter(
+    "comfy_request_total",
+    "Total ComfyUI API requests",
+    ["endpoint", "status_code"]
+)
 
 
 class ComfyUIClientError(Exception):
@@ -41,7 +64,8 @@ class ComfyUIClient:
         self,
         base_url: str = "http://localhost:8188",
         timeout: float = 300.0,
-        poll_interval: float = 1.0
+        poll_interval: float = 1.0,
+        workflow_path: Optional[str] = None
     ):
         """
         Initialize ComfyUI client.
@@ -50,14 +74,21 @@ class ComfyUIClient:
             base_url: Base URL for ComfyUI service
             timeout: Request timeout in seconds
             poll_interval: Interval between status checks in seconds
+            workflow_path: Path to workflow JSON template (optional)
         """
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.poll_interval = poll_interval
         self.client_id = str(uuid.uuid4())
+        self.workflow_path = workflow_path or os.path.join(
+            os.path.dirname(__file__), "../../../workflows/t2i_basic.json"
+        )
 
         # Configure httpx client
         self._client: Optional[httpx.AsyncClient] = None
+
+        # Load workflow template
+        self._workflow_template: Optional[Dict[str, Any]] = None
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -131,11 +162,46 @@ class ComfyUIClient:
             logger.error(f"Error getting models: {e}")
             raise ComfyUIClientError(f"Failed to get models: {str(e)}") from e
 
+    def _load_workflow_template(self) -> Dict[str, Any]:
+        """
+        Load workflow template from JSON file.
+
+        Returns:
+            Workflow template dictionary
+        """
+        if self._workflow_template is None:
+            try:
+                with open(self.workflow_path, 'r') as f:
+                    self._workflow_template = json.load(f)
+                logger.info(f"Loaded workflow template from {self.workflow_path}")
+            except FileNotFoundError:
+                logger.warning(f"Workflow template not found at {self.workflow_path}, using built-in")
+                # Fallback to built-in workflow
+                self._workflow_template = self._get_default_workflow()
+        return json.loads(json.dumps(self._workflow_template))  # Deep copy
+
+    def _get_default_workflow(self) -> Dict[str, Any]:
+        """
+        Get default built-in workflow template.
+
+        Returns:
+            Default workflow dictionary
+        """
+        return {
+            "3": {"inputs": {"seed": 42, "steps": 20, "cfg": 7.0, "sampler_name": "euler_a", "scheduler": "normal", "denoise": 1.0, "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]}, "class_type": "KSampler"},
+            "4": {"inputs": {"ckpt_name": "v1-5-pruned-emaonly.safetensors"}, "class_type": "CheckpointLoaderSimple"},
+            "5": {"inputs": {"width": 512, "height": 512, "batch_size": 1}, "class_type": "EmptyLatentImage"},
+            "6": {"inputs": {"text": "beautiful scenery", "clip": ["4", 1]}, "class_type": "CLIPTextEncode"},
+            "7": {"inputs": {"text": "", "clip": ["4", 1]}, "class_type": "CLIPTextEncode"},
+            "8": {"inputs": {"samples": ["3", 0], "vae": ["4", 2]}, "class_type": "VAEDecode"},
+            "9": {"inputs": {"filename_prefix": "ComfyUI", "images": ["8", 0]}, "class_type": "SaveImage"}
+        }
+
     def _build_workflow(self, request: GenerateImageRequest) -> Dict[str, Any]:
         """
         Build ComfyUI workflow from generation request.
 
-        This creates a basic text-to-image workflow using ComfyUI's node structure.
+        Loads workflow template and injects parameters.
 
         Args:
             request: Image generation request
@@ -143,70 +209,42 @@ class ComfyUIClient:
         Returns:
             ComfyUI workflow dictionary
         """
+        # Load template
+        workflow = self._load_workflow_template()
+
         # Generate a random seed if not provided
         seed = request.seed if request.seed is not None and request.seed >= 0 else \
                int(datetime.utcnow().timestamp() * 1000000) % (2**32)
 
-        # Basic text-to-image workflow
-        workflow = {
-            "3": {  # KSampler node
-                "inputs": {
-                    "seed": seed,
-                    "steps": request.steps,
-                    "cfg": request.cfg_scale,
-                    "sampler_name": request.sampler.value,
-                    "scheduler": "normal",
-                    "denoise": 1.0,
-                    "model": ["4", 0],  # From checkpoint loader
-                    "positive": ["6", 0],  # From CLIP text encode (positive)
-                    "negative": ["7", 0],  # From CLIP text encode (negative)
-                    "latent_image": ["5", 0]  # From empty latent image
-                },
-                "class_type": "KSampler"
-            },
-            "4": {  # Checkpoint Loader
-                "inputs": {
-                    "ckpt_name": request.model
-                },
-                "class_type": "CheckpointLoaderSimple"
-            },
-            "5": {  # Empty Latent Image
-                "inputs": {
-                    "width": request.width,
-                    "height": request.height,
-                    "batch_size": request.batch_size
-                },
-                "class_type": "EmptyLatentImage"
-            },
-            "6": {  # CLIP Text Encode (Positive Prompt)
-                "inputs": {
-                    "text": request.prompt,
-                    "clip": ["4", 1]  # From checkpoint loader
-                },
-                "class_type": "CLIPTextEncode"
-            },
-            "7": {  # CLIP Text Encode (Negative Prompt)
-                "inputs": {
-                    "text": request.negative_prompt or "",
-                    "clip": ["4", 1]  # From checkpoint loader
-                },
-                "class_type": "CLIPTextEncode"
-            },
-            "8": {  # VAE Decode
-                "inputs": {
-                    "samples": ["3", 0],  # From KSampler
-                    "vae": ["4", 2]  # From checkpoint loader
-                },
-                "class_type": "VAEDecode"
-            },
-            "9": {  # Save Image
-                "inputs": {
-                    "filename_prefix": f"api_generated_{uuid.uuid4().hex[:8]}",
-                    "images": ["8", 0]  # From VAE Decode
-                },
-                "class_type": "SaveImage"
-            }
-        }
+        # Inject parameters into workflow nodes
+        # Node 3: KSampler
+        if "3" in workflow:
+            workflow["3"]["inputs"]["seed"] = seed
+            workflow["3"]["inputs"]["steps"] = request.steps
+            workflow["3"]["inputs"]["cfg"] = request.cfg_scale
+            workflow["3"]["inputs"]["sampler_name"] = request.sampler.value
+
+        # Node 4: Checkpoint Loader
+        if "4" in workflow:
+            workflow["4"]["inputs"]["ckpt_name"] = request.model
+
+        # Node 5: Empty Latent Image
+        if "5" in workflow:
+            workflow["5"]["inputs"]["width"] = request.width
+            workflow["5"]["inputs"]["height"] = request.height
+            workflow["5"]["inputs"]["batch_size"] = request.batch_size
+
+        # Node 6: Positive Prompt
+        if "6" in workflow:
+            workflow["6"]["inputs"]["text"] = request.prompt
+
+        # Node 7: Negative Prompt
+        if "7" in workflow:
+            workflow["7"]["inputs"]["text"] = request.negative_prompt or ""
+
+        # Node 9: Save Image
+        if "9" in workflow:
+            workflow["9"]["inputs"]["filename_prefix"] = f"api_generated_{uuid.uuid4().hex[:8]}"
 
         return workflow
 
@@ -414,6 +452,7 @@ class ComfyUIClient:
         created_at = datetime.utcnow()
         started_at = None
         completed_at = None
+        model = request.model or "default"
 
         try:
             # Submit prompt
@@ -429,6 +468,11 @@ class ComfyUIClient:
 
             # Calculate generation time
             generation_time = (completed_at - started_at).total_seconds() if started_at else None
+
+            # Track metrics
+            GENERATION_TOTAL.labels(status="success", model=model).inc()
+            if generation_time:
+                GENERATION_LATENCY.observe(generation_time)
 
             # Build metadata
             metadata = ImageMetadata(
@@ -456,6 +500,9 @@ class ComfyUIClient:
 
         except Exception as e:
             logger.error(f"Image generation failed: {e}")
+
+            # Track failure
+            GENERATION_TOTAL.labels(status="error", model=model).inc()
 
             return ImageResponse(
                 job_id=job_id or "unknown",
