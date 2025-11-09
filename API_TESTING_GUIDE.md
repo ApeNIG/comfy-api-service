@@ -132,14 +132,14 @@ curl -X GET http://localhost:8000/models | jq .
 {
   "models": [
     {
-      "name": "sd_xl_base_1.0.safetensors",
-      "path": "sd_xl_base_1.0.safetensors",
+      "name": "sd_xl_base_1.0.ckpt",
+      "path": "sd_xl_base_1.0.ckpt",
       "size": null,
       "type": "checkpoint"
     },
     {
-      "name": "v1-5-pruned-emaonly.safetensors",
-      "path": "v1-5-pruned-emaonly.safetensors",
+      "name": "v1-5-pruned-emaonly.ckpt",
+      "path": "v1-5-pruned-emaonly.ckpt",
       "size": null,
       "type": "checkpoint"
     }
@@ -184,7 +184,7 @@ curl -X POST http://localhost:8000/api/v1/generate \
     "cfg_scale": 7.0,
     "sampler": "euler_a",
     "seed": 1234567890,
-    "model": "sd_xl_base_1.0.safetensors",
+    "model": "sd_xl_base_1.0.ckpt",
     "generation_time": 15.234
   },
   "created_at": "2025-11-06T12:00:00.000000",
@@ -218,7 +218,7 @@ curl -X POST http://localhost:8000/api/v1/generate \
     "cfg_scale": 7.5,
     "sampler": "dpm_plus_plus_2m",
     "seed": 42,
-    "model": "sd_xl_base_1.0.safetensors",
+    "model": "sd_xl_base_1.0.ckpt",
     "batch_size": 1
   }' | jq .
 ```

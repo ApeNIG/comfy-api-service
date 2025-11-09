@@ -183,3 +183,67 @@ class ModelsListResponse(BaseModel):
 
     models: list[ModelInfo] = Field(..., description="Available models")
     total: int = Field(..., description="Total number of models")
+
+
+class ABTestVariantResult(BaseModel):
+    """Result for a single A/B test variant."""
+
+    name: str = Field(..., description="Variant name")
+    job_id: str = Field(..., description="Job ID for this variant")
+    status: JobStatus = Field(..., description="Generation status")
+    image_url: Optional[str] = Field(None, description="Generated image URL")
+    error: Optional[str] = Field(None, description="Error if failed")
+    metadata: Optional[ImageMetadata] = Field(None, description="Generation metadata")
+    generation_time: Optional[float] = Field(None, description="Time taken (seconds)")
+    estimated_cost: Optional[float] = Field(None, description="Estimated cost in USD")
+
+
+class ABTestResponse(BaseModel):
+    """Response for an A/B test."""
+
+    test_id: str = Field(..., description="Unique identifier for this A/B test")
+    base_prompt: str = Field(..., description="Base prompt used")
+    description: Optional[str] = Field(None, description="Test description")
+    variants: list[ABTestVariantResult] = Field(..., description="Results for each variant")
+    total_variants: int = Field(..., description="Total number of variants")
+    completed_variants: int = Field(0, description="Number of completed variants")
+    failed_variants: int = Field(0, description="Number of failed variants")
+    total_cost: float = Field(0.0, description="Total cost for all variants")
+    total_time: float = Field(0.0, description="Total generation time (seconds)")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "test_id": "abtest_abc123",
+                    "base_prompt": "A serene lake surrounded by mountains at sunset",
+                    "description": "Testing step count impact",
+                    "variants": [
+                        {
+                            "name": "low_steps",
+                            "job_id": "job_123",
+                            "status": "completed",
+                            "image_url": "/api/v1/images/job_123.png",
+                            "generation_time": 8.5,
+                            "estimated_cost": 0.0001
+                        },
+                        {
+                            "name": "high_steps",
+                            "job_id": "job_456",
+                            "status": "completed",
+                            "image_url": "/api/v1/images/job_456.png",
+                            "generation_time": 15.2,
+                            "estimated_cost": 0.00015
+                        }
+                    ],
+                    "total_variants": 2,
+                    "completed_variants": 2,
+                    "failed_variants": 0,
+                    "total_cost": 0.00025,
+                    "total_time": 23.7,
+                    "created_at": "2025-11-08T12:00:00Z"
+                }
+            ]
+        }
+    }

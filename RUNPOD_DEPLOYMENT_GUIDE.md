@@ -82,7 +82,7 @@ Settings → Billing → Budget Alerts
    ```bash
    # Optional: Pre-download Stable Diffusion 1.5
    PRELOAD_MODELS=true
-   MODEL_URL=https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+   MODEL_URL=https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt
    ```
 
 5. **Advanced Settings:**
@@ -232,7 +232,7 @@ curl -X POST http://localhost:8000/api/v1/jobs \
     "width": 512,
     "height": 512,
     "steps": 20,
-    "model": "v1-5-pruned-emaonly.safetensors"
+    "model": "v1-5-pruned-emaonly.ckpt"
   }'
 ```
 
@@ -526,7 +526,7 @@ ls -lh /workspace/ComfyUI/models/checkpoints/
 
 # Download model manually
 cd /workspace/ComfyUI/models/checkpoints/
-wget https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+wget https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt
 ```
 
 ### Issue 4: Slow Image Generation

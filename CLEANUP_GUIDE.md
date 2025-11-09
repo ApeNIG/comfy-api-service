@@ -112,7 +112,7 @@ This is a **single file** that contains everything Docker-related.
 2. **ComfyUI Models (4.27GB):**
    - Docker Volume: `comfy-api-service_comfyui_models`
    - Inside: `ext4.vhdx` → `/var/lib/docker/volumes/comfy-api-service_comfyui_models/_data`
-   - File: `v1-5-pruned-emaonly.safetensors` (4GB)
+   - File: `v1-5-pruned-emaonly.ckpt` (4GB)
 
 3. **Redis/MinIO Data:**
    - Docker Volumes: `comfy-api-service_redis_data`, `comfy-api-service_minio_data`
@@ -144,7 +144,7 @@ python:3.11-slim                        # 213 MB (for API/Worker)
 
 ### 2. ComfyUI Model (auto-downloaded on first run)
 ```
-Model: v1-5-pruned-emaonly.safetensors
+Model: v1-5-pruned-emaonly.ckpt
 Size: 4.0 GB
 Downloaded to: Docker volume comfyui_models
 ```

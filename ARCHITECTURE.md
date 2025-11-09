@@ -283,7 +283,7 @@ class GenerateImageRequest(BaseModel):
     cfg_scale: float = Field(7.0, ge=1.0, le=30.0)
     sampler: str = Field("euler_a")
     seed: Optional[int] = None
-    model: str = Field("sd_xl_base_1.0.safetensors")
+    model: str = Field("sd_xl_base_1.0.ckpt")
 ```
 
 #### Response Models

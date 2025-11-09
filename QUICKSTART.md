@@ -131,7 +131,7 @@ curl -X POST http://localhost:8000/api/v1/generate \
     "cfg_scale": 7.5,
     "sampler": "euler_a",
     "seed": 42,
-    "model": "sd_xl_base_1.0.safetensors"
+    "model": "sd_xl_base_1.0.ckpt"
   }' | jq .
 ```
 

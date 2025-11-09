@@ -139,7 +139,7 @@ API requests were failing with HTTP 400 Bad Request:
 
 **Mismatch between API defaults and ComfyUI availability:**
 
-1. **Model Default:** API requested `sd_xl_base_1.0.safetensors` but only `v1-5-pruned-emaonly.safetensors` was available
+1. **Model Default:** API requested `sd_xl_base_1.0.ckpt` but only `v1-5-pruned-emaonly.ckpt` was available
 2. **Sampler Name:** API sent `euler_a` but ComfyUI expected `euler_ancestral`
 
 ### The Fix
@@ -165,15 +165,15 @@ class SamplerType(str, Enum):
 ```python
 # Before:
 model: str = Field(
-    default="sd_xl_base_1.0.safetensors",
+    default="sd_xl_base_1.0.ckpt",
     ...
 )
 
 # After:
 model: str = Field(
-    default="v1-5-pruned-emaonly.safetensors",
+    default="v1-5-pruned-emaonly.ckpt",
     description="Model checkpoint to use",
-    examples=["v1-5-pruned-emaonly.safetensors", "sd_xl_base_1.0.safetensors"]
+    examples=["v1-5-pruned-emaonly.ckpt", "sd_xl_base_1.0.ckpt"]
 )
 ```
 
@@ -382,7 +382,7 @@ When deploying these fixes:
 - Hardware: CPU mode (Quadro P2000 unsupported)
 - Image: 512x512 pixels
 - Steps: 10 (reduced for testing)
-- Model: v1-5-pruned-emaonly.safetensors
+- Model: v1-5-pruned-emaonly.ckpt
 
 **Results:**
 - Generation time: 534 seconds (~9 minutes)

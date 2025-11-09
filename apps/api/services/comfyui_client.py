@@ -206,7 +206,7 @@ class ComfyUIClient:
         """
         return {
             "3": {"inputs": {"seed": 42, "steps": 20, "cfg": 7.0, "sampler_name": "euler_a", "scheduler": "normal", "denoise": 1.0, "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]}, "class_type": "KSampler"},
-            "4": {"inputs": {"ckpt_name": "v1-5-pruned-emaonly.safetensors"}, "class_type": "CheckpointLoaderSimple"},
+            "4": {"inputs": {"ckpt_name": "v1-5-pruned-emaonly.ckpt"}, "class_type": "CheckpointLoaderSimple"},
             "5": {"inputs": {"width": 512, "height": 512, "batch_size": 1}, "class_type": "EmptyLatentImage"},
             "6": {"inputs": {"text": "beautiful scenery", "clip": ["4", 1]}, "class_type": "CLIPTextEncode"},
             "7": {"inputs": {"text": "", "clip": ["4", 1]}, "class_type": "CLIPTextEncode"},
@@ -292,7 +292,12 @@ class ComfyUIClient:
                 "/prompt",
                 json=payload
             )
-            response.raise_for_status()
+
+            # Capture response body before raising error
+            if response.status_code != 200:
+                error_body = response.text
+                logger.error(f"ComfyUI returned {response.status_code}: {error_body}")
+                response.raise_for_status()
 
             result = response.json()
 
@@ -547,4 +552,8 @@ async def get_comfyui_client() -> ComfyUIClient:
             async with client:
                 return await client.generate_image(request)
     """
-    return ComfyUIClient()
+    from ..config import settings
+    return ComfyUIClient(
+        base_url=settings.comfyui_url,
+        timeout=settings.comfyui_timeout
+    )

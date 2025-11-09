@@ -86,9 +86,9 @@ class GenerateImageRequest(BaseModel):
     )
 
     model: str = Field(
-        default="v1-5-pruned-emaonly.safetensors",
+        default="v1-5-pruned-emaonly.ckpt",
         description="Model checkpoint to use",
-        examples=["v1-5-pruned-emaonly.safetensors", "sd_xl_base_1.0.safetensors"]
+        examples=["v1-5-pruned-emaonly.ckpt", "sd_xl_base_1.0.safetensors"]
     )
 
     batch_size: int = Field(
@@ -163,6 +163,80 @@ class BatchGenerateRequest(BaseModel):
                             "prompt": "A dog playing in a park",
                             "width": 512,
                             "height": 512
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+
+
+class ABTestVariant(BaseModel):
+    """A single variant in an A/B test."""
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Name of this variant (e.g., 'A', 'B', 'high_steps')",
+        examples=["A", "B", "high_quality"]
+    )
+
+    request: GenerateImageRequest = Field(
+        ...,
+        description="Generation parameters for this variant"
+    )
+
+
+class ABTestRequest(BaseModel):
+    """Request model for A/B testing different generation parameters."""
+
+    base_prompt: str = Field(
+        ...,
+        min_length=1,
+        max_length=5000,
+        description="Base prompt used across all variants",
+        examples=["A beautiful sunset over mountains"]
+    )
+
+    variants: list[ABTestVariant] = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        description="List of variants to test (2-5 variants)"
+    )
+
+    description: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Optional description of what you're testing",
+        examples=["Testing step count impact on quality"]
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "base_prompt": "A serene lake surrounded by mountains at sunset",
+                    "description": "Testing different step counts",
+                    "variants": [
+                        {
+                            "name": "low_steps",
+                            "request": {
+                                "prompt": "A serene lake surrounded by mountains at sunset",
+                                "steps": 15,
+                                "width": 512,
+                                "height": 512
+                            }
+                        },
+                        {
+                            "name": "high_steps",
+                            "request": {
+                                "prompt": "A serene lake surrounded by mountains at sunset",
+                                "steps": 40,
+                                "width": 512,
+                                "height": 512
+                            }
                         }
                     ]
                 }

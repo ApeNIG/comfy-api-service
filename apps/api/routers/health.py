@@ -1,7 +1,9 @@
 """Health check and monitoring endpoints."""
 
 import logging
+import asyncio
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 from datetime import datetime
 
 from ..models.responses import HealthResponse, ModelsListResponse, ModelInfo
@@ -12,6 +14,67 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     tags=["Health & Monitoring"]
 )
+
+
+@router.get(
+    "/healthz",
+    summary="Liveness check",
+    description="Simple liveness check with no external dependencies (for Docker healthcheck)",
+    status_code=status.HTTP_200_OK,
+    response_model=dict
+)
+async def liveness_check():
+    """
+    Liveness check - returns immediately with no external calls.
+
+    This endpoint is designed for Docker healthcheck and load balancers.
+    It only verifies the API process is running and responsive.
+    """
+    return {"status": "alive"}
+
+
+@router.get(
+    "/readyz",
+    summary="Readiness check",
+    description="Readiness check with bounded timeout to external dependencies",
+    status_code=status.HTTP_200_OK
+)
+async def readiness_check(
+    client: ComfyUIClient = Depends(get_comfyui_client)
+):
+    """
+    Readiness check - verifies service can handle requests.
+
+    Performs bounded checks (~250ms max) to external dependencies.
+    Returns 503 if not ready to handle traffic.
+    """
+    comfyui_ready = False
+
+    try:
+        # Bounded timeout for ComfyUI check (250ms)
+        async with client:
+            comfyui_ready = await asyncio.wait_for(
+                client.health_check(),
+                timeout=0.25
+            )
+    except asyncio.TimeoutError:
+        logger.warning("ComfyUI readiness check timed out (>250ms)")
+    except Exception as e:
+        logger.warning(f"ComfyUI readiness check failed: {e}")
+
+    if comfyui_ready:
+        return {
+            "status": "ready",
+            "comfyui": "connected"
+        }
+    else:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "not_ready",
+                "comfyui": "disconnected"
+            }
+        )
 
 
 @router.get(

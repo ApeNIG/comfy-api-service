@@ -84,14 +84,14 @@ docker compose logs -f worker
 docker exec comfyui-backend ls -lh /opt/ComfyUI/models/checkpoints/
 
 # Should show:
-# v1-5-pruned-emaonly.safetensors
+# v1-5-pruned-emaonly.ckpt
 ```
 
 **2. Use correct model in request:**
 
 ```json
 {
-  "model": "v1-5-pruned-emaonly.safetensors",
+  "model": "v1-5-pruned-emaonly.ckpt",
   "sampler": "euler_ancestral"
 }
 ```
@@ -99,7 +99,7 @@ docker exec comfyui-backend ls -lh /opt/ComfyUI/models/checkpoints/
 **3. Verify API defaults match (apps/api/models/requests.py):**
 
 ```python
-model: str = Field(default="v1-5-pruned-emaonly.safetensors")
+model: str = Field(default="v1-5-pruned-emaonly.ckpt")
 EULER_A = "euler_ancestral"  # NOT "euler_a"
 ```
 
@@ -356,7 +356,7 @@ comfyui:
 **2. Model download failed:**
 
 ```
-Error: Cannot find model v1-5-pruned-emaonly.safetensors
+Error: Cannot find model v1-5-pruned-emaonly.ckpt
 ```
 
 Solution:
@@ -364,7 +364,7 @@ Solution:
 # Manually download model
 docker exec comfyui-backend bash -c "
 cd /opt/ComfyUI/models/checkpoints && \
-wget https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+wget https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt
 "
 
 # Check it's there

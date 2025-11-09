@@ -297,7 +297,7 @@ class ComfyUIClient:
         scheduler: str = "normal",
         seed: Optional[int] = None,
         num_images: int = 1,
-        model: str = "v1-5-pruned-emaonly.safetensors",
+        model: str = "v1-5-pruned-emaonly.ckpt",
         **kwargs
     ) -> Job:
         """
@@ -314,7 +314,7 @@ class ComfyUIClient:
             scheduler: Scheduler type (default: "normal")
             seed: Random seed for reproducibility (optional)
             num_images: Number of images to generate (default: 1)
-            model: Model filename (default: "v1-5-pruned-emaonly.safetensors")
+            model: Model filename (default: "v1-5-pruned-emaonly.ckpt")
             **kwargs: Additional parameters
 
         Returns:

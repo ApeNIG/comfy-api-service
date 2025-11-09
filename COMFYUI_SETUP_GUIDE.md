@@ -61,7 +61,7 @@ docker-compose logs -f comfyui
 
 **You'll see:**
 ```
-Downloading model: v1-5-pruned-emaonly.safetensors
+Downloading model: v1-5-pruned-emaonly.ckpt
 Progress: [################] 100%
 ComfyUI started successfully
 Server running on http://0.0.0.0:8188
@@ -104,7 +104,7 @@ Open your browser to http://localhost:8000/docs and:
 ```json
 {
   "prompt": "A beautiful sunset over mountains, golden hour, photorealistic",
-  "model": "v1-5-pruned-emaonly.safetensors",
+  "model": "v1-5-pruned-emaonly.ckpt",
   "width": 512,
   "height": 512,
   "steps": 20
@@ -182,7 +182,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install -r requirements.txt
 
 # Download a model (Stable Diffusion 1.5)
-# Download from: https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+# Download from: https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt
 # Put it in: ComfyUI\models\checkpoints\
 ```
 
@@ -265,7 +265,7 @@ When testing in CPU mode, use fewer steps:
   "width": 512,
   "height": 512,
   "steps": 10,
-  "model": "v1-5-pruned-emaonly.safetensors"
+  "model": "v1-5-pruned-emaonly.ckpt"
 }
 ```
 
@@ -327,7 +327,7 @@ curl http://localhost:8000/api/v1/jobs/JOB_ID
 **Hardware:** Quadro P2000 (compute 6.1, unsupported by PyTorch 2.0+)
 
 **Test Results:**
-- Model: v1-5-pruned-emaonly.safetensors
+- Model: v1-5-pruned-emaonly.ckpt
 - Resolution: 512x512
 - Steps: 10
 - Time: 534 seconds (~9 minutes)
@@ -417,7 +417,7 @@ curl http://localhost:8188/system_stats
 
 **Manual download:**
 1. Go to https://huggingface.co/runwayml/stable-diffusion-v1-5
-2. Download `v1-5-pruned-emaonly.safetensors` (4GB)
+2. Download `v1-5-pruned-emaonly.ckpt` (4GB)
 3. Put it in ComfyUI's models folder:
    - Docker: Copy into container
    - Local: `ComfyUI\models\checkpoints\`
@@ -518,7 +518,7 @@ After ComfyUI downloads models, you can use:
 
 | Model | File Size | Best For |
 |-------|-----------|----------|
-| `v1-5-pruned-emaonly.safetensors` | 4GB | General purpose, fast |
+| `v1-5-pruned-emaonly.ckpt` | 4GB | General purpose, fast |
 | `dreamshaper_8.safetensors` | 2GB | Artistic, stylized |
 | `realisticVisionV51_v51VAE.safetensors` | 5GB | Photorealistic |
 
