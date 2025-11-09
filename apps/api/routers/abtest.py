@@ -192,7 +192,6 @@ async def run_ab_test(
             # Calculate generation time
             gen_time = None
             if job_data.get("started_at") and job_data.get("finished_at"):
-                from datetime import datetime
                 started = datetime.fromisoformat(job_data["started_at"].replace('Z', '+00:00'))
                 finished = datetime.fromisoformat(job_data["finished_at"].replace('Z', '+00:00'))
                 gen_time = (finished - started).total_seconds()

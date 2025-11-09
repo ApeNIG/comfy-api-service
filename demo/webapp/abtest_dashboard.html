@@ -731,7 +731,7 @@
                             <span class="status-badge ${statusClass}">${variant.status}</span>
                         </div>
 
-                        ${variant.image_url ? `<img src="${variant.image_url}" class="image-preview" alt="${variant.name}">` : ''}
+                        ${variant.image_url ? `<img src="${variant.image_url.replace('http://minio:9000', 'http://localhost:9001')}" class="image-preview" alt="${variant.name}">` : ''}
 
                         ${variant.generation_time ? `
                             <div class="metric">
