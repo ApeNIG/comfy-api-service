@@ -5,7 +5,7 @@
     "context": ".."
   },
   "workspaceFolder": "/workspaces/comfy-api-service",
-  "forwardPorts": [8000, 8188, 6379, 9000, 9001],
+  "forwardPorts": [8000, 8080, 8188, 6379, 9000, 9001],
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
