@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = Field(default="http://localhost:3000", env="FRONTEND_URL")
 
     # ============================================================================
-    # Database Settings (Postgres)
+    # Database Settings (Postgres / Supabase)
     # ============================================================================
     DATABASE_URL: str = Field(..., env="DATABASE_URL")
     DATABASE_POOL_SIZE: int = 10
@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     DATABASE_POOL_TIMEOUT: int = 30
     DATABASE_POOL_RECYCLE: int = 3600  # 1 hour
     DATABASE_ECHO: bool = False  # Log SQL queries
+
+    # Supabase Settings (optional - if using Supabase)
+    SUPABASE_URL: Optional[str] = Field(default=None, env="SUPABASE_URL")
+    SUPABASE_ANON_KEY: Optional[str] = Field(default=None, env="SUPABASE_ANON_KEY")
+    SUPABASE_SERVICE_KEY: Optional[str] = Field(default=None, env="SUPABASE_SERVICE_KEY")
 
     # ============================================================================
     # Redis Settings

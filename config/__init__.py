@@ -21,8 +21,11 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 # Map environments to setting classes
 SETTINGS_MAP = {
     "development": DevelopmentSettings,
+    "dev": DevelopmentSettings,  # Alias for development
     "production": ProductionSettings,
+    "prod": ProductionSettings,  # Alias for production
     "testing": TestingSettings,
+    "test": TestingSettings,  # Alias for testing
 }
 
 # Get the appropriate settings class
