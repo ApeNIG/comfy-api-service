@@ -30,6 +30,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime, timedelta
+import jwt
 
 from apps.creator.services.auth_service import AuthService, AuthError, get_auth_service
 from apps.creator.repositories import UserRepository, SubscriptionRepository
@@ -40,7 +42,43 @@ from config import settings
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/auth", tags=["🔐 Authentication"])
+router = APIRouter(tags=["🔐 Authentication"])
+
+
+# ==================== JWT Token Generation ====================
+
+def create_access_token(user_id: str, email: str, expires_delta: timedelta = None) -> str:
+    """
+    Generate JWT access token for user session.
+
+    Token contains:
+    - user_id: For user identification
+    - email: For convenience
+    - exp: Expiration timestamp
+    - iat: Issued at timestamp
+
+    Args:
+        user_id: User's UUID
+        email: User's email
+        expires_delta: Token lifetime (default: 7 days)
+
+    Returns:
+        JWT token string
+    """
+    if expires_delta is None:
+        expires_delta = timedelta(days=7)  # Default 7-day session
+
+    expire = datetime.utcnow() + expires_delta
+
+    payload = {
+        "sub": user_id,  # Standard JWT claim for subject (user ID)
+        "email": email,
+        "exp": expire,  # Expiration time
+        "iat": datetime.utcnow(),  # Issued at
+    }
+
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+    return token
 
 
 # ==================== Request/Response Models ====================
@@ -79,6 +117,8 @@ class AuthResponse(BaseModel):
     """Successful authentication response."""
     success: bool = True
     message: str = Field(..., description="Friendly success message")
+    access_token: str = Field(..., description="JWT access token for API requests")
+    token_type: str = Field(default="bearer", description="Token type (always 'bearer')")
     user: dict = Field(..., description="User profile")
     subscription: dict = Field(..., description="Subscription info")
     next_step: str = Field(..., description="Where to go next")
@@ -123,10 +163,18 @@ async def register(
         # Get subscription
         subscription = subscription_repo.find_by_user_id(user.id)
 
+        # Generate JWT access token
+        access_token = create_access_token(
+            user_id=str(user.id),
+            email=user.email
+        )
+
         # Build response with helpful guidance
         return AuthResponse(
             success=True,
             message=f"Welcome to Creator, {user.full_name}! 🎉 Check your email to verify your account.",
+            access_token=access_token,
+            token_type="bearer",
             user={
                 "id": str(user.id),
                 "email": user.email,
@@ -183,6 +231,12 @@ async def login(
         # Get subscription
         subscription = subscription_repo.find_by_user_id(user.id)
 
+        # Generate JWT access token
+        access_token = create_access_token(
+            user_id=str(user.id),
+            email=user.email
+        )
+
         # Check if onboarding is complete
         onboarding_complete = user.has_drive_connected
 
@@ -195,6 +249,8 @@ async def login(
         return AuthResponse(
             success=True,
             message=f"Welcome back, {user.full_name}! 👋",
+            access_token=access_token,
+            token_type="bearer",
             user={
                 "id": str(user.id),
                 "email": user.email,

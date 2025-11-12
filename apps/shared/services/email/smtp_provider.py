@@ -62,10 +62,10 @@ class EmailService:
         """Initialize email service."""
         self.smtp_host = settings.SMTP_HOST
         self.smtp_port = settings.SMTP_PORT
-        self.username = settings.SMTP_USERNAME
+        self.username = settings.SMTP_USER
         self.password = settings.SMTP_PASSWORD
         self.from_email = settings.SMTP_FROM_EMAIL
-        self.use_tls = settings.SMTP_USE_TLS
+        self.use_tls = getattr(settings, 'SMTP_USE_TLS', True)  # Default to TLS
 
         logger.info(
             "email_service_initialized",

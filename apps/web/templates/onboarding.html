@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to CREATOR</title>
+    <style>
+        /*
+        Onboarding: Cosmos-Inspired Design
+        - Dark theme with floating animations
+        - 3D tilted card selection
+        - Checkmark animations on selection
+        - Conversational, friendly copy
+        */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #1a1a1a;
+            --bg-card-hover: #252525;
+            --coral-primary: #FF6E6B;
+            --coral-secondary: #FF8E53;
+            --cream: #F5E6D3;
+            --gray-text: #9ca3af;
+            --white: #ffffff;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--white);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Floating background elements */
+        .floating-bg {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .floating-bg-1 {
+            width: 350px;
+            height: 350px;
+            background: var(--coral-primary);
+            top: -80px;
+            right: -80px;
+            animation: float1 18s ease-in-out infinite;
+        }
+
+        .floating-bg-2 {
+            width: 280px;
+            height: 280px;
+            background: var(--coral-secondary);
+            bottom: -60px;
+            left: -60px;
+            animation: float2 22s ease-in-out infinite;
+        }
+
+        .floating-bg-3 {
+            width: 200px;
+            height: 200px;
+            background: #a78bfa;
+            top: 50%;
+            left: 50%;
+            animation: float3 25s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(40px, 60px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-50px, -40px) rotate(180deg); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(calc(-50% - 60px), calc(-50% + 40px)) scale(1.2); }
+        }
+
+        /* Main container */
+        .onboarding-container {
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Success icon */
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            animation: scaleIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0) rotate(-180deg);
+            }
+            to {
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .success-icon svg {
+            width: 50px;
+            height: 50px;
+            stroke: var(--white);
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            animation: checkDraw 0.4s ease-out 0.3s both;
+        }
+
+        @keyframes checkDraw {
+            from {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 100;
+            }
+            to {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Header */
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--gray-text);
+            font-size: 1.25rem;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        /* Steps Grid */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .step {
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        .step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .step:hover {
+            transform: translateY(-8px) rotate(2deg);
+            border-color: var(--coral-primary);
+            box-shadow: 0 20px 60px rgba(255, 110, 107, 0.3);
+        }
+
+        .step:hover::before {
+            opacity: 0.05;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 4px 16px rgba(255, 110, 107, 0.3);
+        }
+
+        .step-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: var(--white);
+        }
+
+        .step-content p {
+            color: var(--gray-text);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: rgba(255, 142, 83, 0.15);
+            color: var(--coral-secondary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(255, 142, 83, 0.3);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1.25rem 2.5rem;
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
+            color: var(--white);
+            text-decoration: none;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 1.125rem;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition);
+            margin: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 8px 24px rgba(255, 110, 107, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 110, 107, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--border-subtle);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--coral-primary);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .skip-link {
+            display: block;
+            text-align: center;
+            color: var(--gray-text);
+            font-size: 0.95rem;
+            margin-top: 1.5rem;
+            text-decoration: none;
+            transition: color var(--transition);
+        }
+
+        .skip-link:hover {
+            color: var(--coral-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2.25rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .step:hover {
+                transform: translateY(-4px);
+            }
+
+            .btn {
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+
+            .floating-bg {
+                filter: blur(60px);
+            }
+        }
+
+        /* Animation delays for steps */
+        .step {
+            animation: fadeIn 0.5s ease-out backwards;
+        }
+
+        .step:nth-child(1) { animation-delay: 0.2s; }
+        .step:nth-child(2) { animation-delay: 0.3s; }
+        .step:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating background elements -->
+    <div class="floating-bg floating-bg-1"></div>
+    <div class="floating-bg floating-bg-2"></div>
+    <div class="floating-bg floating-bg-3"></div>
+
+    <div class="onboarding-container">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+
+        <h1>You're In! 🎉</h1>
+        <p class="subtitle">Welcome to CREATOR. Here's what you can do next:</p>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Connect Google Drive</h3>
+                    <p>Link your Drive to automatically process images you drop into a folder.</p>
+                    <span class="feature-badge">Coming Soon</span>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Upload Your First Image</h3>
+                    <p>Drop an image and watch CREATOR transform it with AI-powered workflows.</p>
+                    <span class="feature-badge">Coming Soon</span>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Get Results Automatically</h3>
+                    <p>Processed images appear back in your Drive automatically. Magic!</p>
+                    <span class="feature-badge">Coming Soon</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <a href="/dashboard" class="btn">Go to Dashboard</a>
+            <a href="/docs" class="btn btn-secondary">View API Docs</a>
+
+            <a href="/login" class="skip-link">← Back to Login</a>
+        </div>
+    </div>
+
+    <script>
+        // Add subtle floating animation to steps on load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎉 Welcome to CREATOR!');
+
+            // Optional: Add confetti or particle effects here
+        });
+    </script>
+</body>
+</html>

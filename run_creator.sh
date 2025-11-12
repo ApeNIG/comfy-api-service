@@ -14,7 +14,9 @@ set -e
 # Load environment variables
 if [ -f .env ]; then
     echo "Loading environment from .env..."
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 # Set defaults if not provided

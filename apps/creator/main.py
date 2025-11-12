@@ -155,6 +155,9 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 # app.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
 # app.include_router(subscriptions.router, prefix="/subscriptions", tags=["Subscriptions"])
 
+# Serve static assets (generated images, CSS, JS, etc.)
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+
 
 # Global exception handler
 @app.exception_handler(Exception)

@@ -32,7 +32,7 @@ async def home_page(
     Home page.
 
     If authenticated: redirect to dashboard
-    If not authenticated: show landing page with CTA to sign up
+    If not authenticated: redirect to login page
     """
     if user:
         # Redirect to dashboard if already logged in
@@ -45,10 +45,14 @@ async def home_page(
             },
         )
 
-    # Show landing page
+    # Redirect to login page
     return templates.TemplateResponse(
-        "landing.html",
-        {"request": request},
+        "redirect.html",
+        {
+            "request": request,
+            "redirect_url": "/login",
+            "message": "Welcome to Creator!",
+        },
     )
 
 
@@ -167,6 +171,36 @@ async def onboarding_page(
     5. Done!
 
     Beautiful step-by-step wizard with progress indicator.
+    """
+    if not user:
+        return templates.TemplateResponse(
+            "redirect.html",
+            {
+                "request": request,
+                "redirect_url": "/login",
+                "message": "Please log in to continue",
+            },
+        )
+
+    return templates.TemplateResponse(
+        "onboarding.html",
+        {
+            "request": request,
+            "user": user,
+        },
+    )
+
+
+@router.get("/onboarding/connect-drive", response_class=HTMLResponse)
+async def onboarding_connect_drive_page(
+    request: Request,
+    user: User = Depends(get_current_user_optional),
+):
+    """
+    Onboarding step: Connect Google Drive.
+
+    This is the first step in the onboarding flow after registration.
+    Shows success message and guides user through Drive connection.
     """
     if not user:
         return templates.TemplateResponse(

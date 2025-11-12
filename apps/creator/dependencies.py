@@ -14,7 +14,12 @@ Usage in routes:
 """
 
 from typing import Generator
-from fastapi import Depends, HTTPException, status
+from uuid import UUID
+import jwt
+from jwt.exceptions import InvalidTokenError
+from datetime import datetime
+
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -26,6 +31,7 @@ from apps.creator.repositories import (
     JobRepository,
 )
 from apps.creator.models.domain import User
+from config import settings
 
 # Security scheme for OAuth bearer tokens
 security = HTTPBearer()
@@ -84,11 +90,11 @@ async def get_current_user(
     cache = Depends(get_cache),
 ) -> User:
     """
-    Get current authenticated user from OAuth token.
+    Get current authenticated user from JWT token.
 
     This dependency:
     1. Extracts bearer token from Authorization header
-    2. Validates token with Google OAuth
+    2. Validates JWT token signature and expiration
     3. Fetches user from database
     4. Caches user for subsequent requests
 
@@ -110,27 +116,43 @@ async def get_current_user(
     """
     token = credentials.credentials
 
-    # Check cache first (5-minute TTL)
+    # Check cache first (5-minute TTL) - optional, gracefully handle Redis failures
     cache_key = f"user_token:{token[:16]}"  # Use token prefix as key
-    cached_user_id = cache.get(cache_key)
+    try:
+        cached_user_id = cache.get(cache_key)
+        if cached_user_id:
+            user = user_repo.find_by_id(UUID(cached_user_id))
+            if user and user.is_active:
+                return user
+    except Exception:
+        # Redis not available - continue without cache
+        pass
 
-    if cached_user_id:
-        user = user_repo.find_by_id(cached_user_id)
-        if user and user.is_active:
-            return user
+    # Validate JWT token
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id: str = payload.get("sub")
 
-    # Validate token with Google OAuth
-    # TODO: Implement actual Google token validation
-    # For now, we'll use a simple lookup by access token
-    # In production, you'd call Google's tokeninfo endpoint
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    # Simplified token validation (replace with actual OAuth validation)
-    user = user_repo.find_one_by(google_access_token=token)
+    # Fetch user from database
+    user = user_repo.find_by_id(UUID(user_id))
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token",
+            detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -140,13 +162,18 @@ async def get_current_user(
             detail="User account is inactive",
         )
 
-    # Cache user ID for 5 minutes
-    cache.setex(cache_key, 300, str(user.id))
+    # Cache user ID for 5 minutes - optional, gracefully handle Redis failures
+    try:
+        cache.setex(cache_key, 300, str(user.id))
+    except Exception:
+        # Redis not available - continue without cache
+        pass
 
     return user
 
 
 async def get_current_user_optional(
+    request: Request,
     user_repo: UserRepository = Depends(get_user_repository),
     cache = Depends(get_cache),
     credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
@@ -155,8 +182,10 @@ async def get_current_user_optional(
     Get current user if authenticated, otherwise return None.
 
     This is for pages that work both logged in and logged out (e.g., landing page).
+    Checks both Authorization header and cookies for the JWT token.
 
     Args:
+        request: FastAPI request object (for cookies)
         user_repo: User repository (injected)
         cache: Redis cache (injected)
         credentials: Optional HTTP bearer token (injected)
@@ -171,27 +200,52 @@ async def get_current_user_optional(
                 return {"message": f"Welcome back, {user.full_name}!"}
             return {"message": "Welcome! Please sign up."}
     """
-    if not credentials:
+    # Try to get token from Authorization header first, then from cookie
+    token = None
+    if credentials:
+        token = credentials.credentials
+    else:
+        # Fall back to cookie
+        token = request.cookies.get("access_token")
+
+    if not token:
         return None
 
-    token = credentials.credentials
-
-    # Check cache first
+    # Check cache first - optional, gracefully handle Redis failures
     cache_key = f"user_token:{token[:16]}"
-    cached_user_id = cache.get(cache_key)
+    try:
+        cached_user_id = cache.get(cache_key)
+        if cached_user_id:
+            user = user_repo.find_by_id(UUID(cached_user_id))
+            if user and user.is_active:
+                return user
+    except Exception:
+        # Redis not available - continue without cache
+        pass
 
-    if cached_user_id:
-        user = user_repo.find_by_id(cached_user_id)
+    # Validate JWT token
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id: str = payload.get("sub")
+
+        if user_id is None:
+            return None
+
+        # Fetch user from database
+        user = user_repo.find_by_id(UUID(user_id))
+
         if user and user.is_active:
+            # Cache user ID for 5 minutes - optional, gracefully handle Redis failures
+            try:
+                cache.setex(cache_key, 300, str(user.id))
+            except Exception:
+                # Redis not available - continue without cache
+                pass
             return user
 
-    # Validate token
-    user = user_repo.find_one_by(google_access_token=token)
-
-    if user and user.is_active:
-        # Cache user ID
-        cache.setex(cache_key, 300, str(user.id))
-        return user
+    except InvalidTokenError:
+        # Invalid token - just return None (don't raise error)
+        return None
 
     return None
 

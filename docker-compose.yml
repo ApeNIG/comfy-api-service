@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  # PostgreSQL for Creator product database
+  postgres:
+    image: postgres:15-alpine
+    container_name: comfyui-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: comfyui
+      POSTGRES_PASSWORD: comfyui_dev
+      POSTGRES_DB: comfyui_creator
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comfyui"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - comfyui-network
+
   # Redis for job queue and caching
   redis:
     image: redis:7-alpine
@@ -79,6 +100,8 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://comfyui:comfyui_dev@postgres:5432/comfyui_creator
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
@@ -89,6 +112,8 @@ services:
       - AUTH_ENABLED=false
       - RATE_LIMIT_ENABLED=false
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
       minio:
@@ -111,6 +136,8 @@ services:
     container_name: comfyui-worker
     command: python -m arq apps.worker.main.WorkerSettings
     environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://comfyui:comfyui_dev@postgres:5432/comfyui_creator
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
@@ -118,6 +145,8 @@ services:
       - COMFYUI_URL=https://jfmkqw45px5o3x-8188.proxy.runpod.net
       - COMFYUI_TIMEOUT=120.0
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
       minio:
@@ -127,6 +156,8 @@ services:
       - comfyui-network
 
 volumes:
+  postgres_data:
+    driver: local
   redis_data:
     driver: local
   minio_data:
