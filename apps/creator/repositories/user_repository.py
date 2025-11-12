@@ -3,9 +3,11 @@ User repository with custom queries
 """
 
 from typing import Optional
+from uuid import UUID
+from datetime import datetime
 from sqlalchemy.orm import Session
 
-from apps.creator.models.domain import User
+from apps.creator.models import User
 from apps.creator.repositories.base import BaseRepository
 
 
@@ -38,17 +40,17 @@ class UserRepository(BaseRepository[User]):
         """
         return self.db.query(User).filter(User.email == email).first()
 
-    def find_by_google_id(self, google_id: str) -> Optional[User]:
+    def find_by_api_key(self, api_key: str) -> Optional[User]:
         """
-        Find user by Google OAuth ID.
+        Find user by API key.
 
         Args:
-            google_id: Google user ID
+            api_key: User's API key
 
         Returns:
             User instance or None if not found
         """
-        return self.db.query(User).filter(User.google_id == google_id).first()
+        return self.db.query(User).filter(User.api_key == api_key).first()
 
     def find_active_users(self, skip: int = 0, limit: int = 100) -> list[User]:
         """
@@ -69,116 +71,33 @@ class UserRepository(BaseRepository[User]):
             .all()
         )
 
-    def find_users_with_drive_connected(
-        self, skip: int = 0, limit: int = 100
-    ) -> list[User]:
+    def find_by_reset_token(self, token: str) -> Optional[User]:
         """
-        Find users who have connected Google Drive.
+        Find user by password reset token.
 
         Args:
-            skip: Number of records to skip
-            limit: Max records to return
+            token: Password reset token
 
         Returns:
-            List of users with Drive connected
+            User instance or None if not found/expired
         """
+        now = datetime.utcnow()
         return (
             self.db.query(User)
             .filter(
-                User.google_access_token.isnot(None),
-                User.drive_folder_id.isnot(None),
+                User.reset_token == token,
+                User.reset_token_expires.isnot(None),
+                User.reset_token_expires > now,
             )
-            .offset(skip)
-            .limit(limit)
-            .all()
+            .first()
         )
 
-    def find_users_needing_token_refresh(self, limit: int = 100) -> list[User]:
+    def increment_monthly_usage(self, user_id: UUID) -> Optional[User]:
         """
-        Find users whose Google tokens are expiring soon.
-
-        Used by background worker to proactively refresh tokens.
-
-        Args:
-            limit: Max records to return
-
-        Returns:
-            List of users needing token refresh
-        """
-        from datetime import datetime, timedelta
-
-        threshold = datetime.utcnow() + timedelta(minutes=5)
-
-        return (
-            self.db.query(User)
-            .filter(
-                User.google_token_expires_at.isnot(None),
-                User.google_token_expires_at <= threshold,
-                User.google_refresh_token.isnot(None),
-            )
-            .limit(limit)
-            .all()
-        )
-
-    def update_google_tokens(
-        self,
-        user_id: str,
-        access_token: str,
-        refresh_token: str | None = None,
-        expires_at: str | None = None,
-    ) -> Optional[User]:
-        """
-        Update user's Google OAuth tokens (encrypted).
+        Increment user's monthly generation count and total.
 
         Args:
             user_id: User UUID
-            access_token: New access token (will be encrypted)
-            refresh_token: New refresh token (will be encrypted)
-            expires_at: Token expiration datetime
-
-        Returns:
-            Updated user or None if not found
-        """
-        attrs = {"google_access_token": access_token}
-
-        if refresh_token:
-            attrs["google_refresh_token"] = refresh_token
-
-        if expires_at:
-            attrs["google_token_expires_at"] = expires_at
-
-        return self.update(user_id, **attrs)
-
-    def update_drive_folders(
-        self,
-        user_id: str,
-        input_folder_id: str,
-        output_folder_id: str,
-    ) -> Optional[User]:
-        """
-        Update user's Drive folder configuration.
-
-        Args:
-            user_id: User UUID
-            input_folder_id: Drive folder ID for input files
-            output_folder_id: Drive folder ID for output files
-
-        Returns:
-            Updated user or None if not found
-        """
-        return self.update(
-            user_id,
-            drive_folder_id=input_folder_id,
-            drive_output_folder_id=output_folder_id,
-        )
-
-    def increment_job_count(self, user_id: str, credits: int = 1) -> Optional[User]:
-        """
-        Increment user's total job and credit counters.
-
-        Args:
-            user_id: User UUID
-            credits: Number of credits consumed
 
         Returns:
             Updated user or None if not found
@@ -187,16 +106,16 @@ class UserRepository(BaseRepository[User]):
         if not user:
             return None
 
-        user.total_jobs_run += 1
-        user.total_credits_used += credits
+        user.monthly_generation_count += 1
+        user.total_generations += 1
 
         self.db.flush()
         self.db.refresh(user)
         return user
 
-    def record_login(self, user_id: str) -> Optional[User]:
+    def record_login(self, user_id: UUID) -> Optional[User]:
         """
-        Record user login timestamp.
+        Record user login timestamp and increment login count.
 
         Args:
             user_id: User UUID
@@ -204,6 +123,13 @@ class UserRepository(BaseRepository[User]):
         Returns:
             Updated user or None if not found
         """
-        from datetime import datetime
+        user = self.find_by_id(user_id)
+        if not user:
+            return None
 
-        return self.update(user_id, last_login_at=datetime.utcnow())
+        user.last_login_at = datetime.utcnow()
+        user.login_count += 1
+
+        self.db.flush()
+        self.db.refresh(user)
+        return user

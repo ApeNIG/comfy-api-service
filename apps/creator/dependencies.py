@@ -30,7 +30,7 @@ from apps.creator.repositories import (
     SubscriptionRepository,
     JobRepository,
 )
-from apps.creator.models.domain import User
+from apps.creator.models import User
 from config import settings
 
 # Security scheme for OAuth bearer tokens

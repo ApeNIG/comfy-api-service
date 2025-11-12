@@ -31,54 +31,19 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime, timedelta
-import jwt
+from uuid import UUID
 
 from apps.creator.services.auth_service import AuthService, AuthError, get_auth_service
-from apps.creator.repositories import UserRepository, SubscriptionRepository
-from apps.creator.dependencies import get_user_repository, get_subscription_repository, get_current_user
-from apps.creator.models.domain import User
+from apps.creator.repositories import UserRepository
+from apps.creator.dependencies import get_user_repository, get_current_user
+from apps.creator.models import User
+from apps.creator.utils.jwt import create_access_token
 from apps.shared.utils.logger import get_logger
 from config import settings
 
 logger = get_logger(__name__)
 
 router = APIRouter(tags=["🔐 Authentication"])
-
-
-# ==================== JWT Token Generation ====================
-
-def create_access_token(user_id: str, email: str, expires_delta: timedelta = None) -> str:
-    """
-    Generate JWT access token for user session.
-
-    Token contains:
-    - user_id: For user identification
-    - email: For convenience
-    - exp: Expiration timestamp
-    - iat: Issued at timestamp
-
-    Args:
-        user_id: User's UUID
-        email: User's email
-        expires_delta: Token lifetime (default: 7 days)
-
-    Returns:
-        JWT token string
-    """
-    if expires_delta is None:
-        expires_delta = timedelta(days=7)  # Default 7-day session
-
-    expire = datetime.utcnow() + expires_delta
-
-    payload = {
-        "sub": user_id,  # Standard JWT claim for subject (user ID)
-        "email": email,
-        "exp": expire,  # Expiration time
-        "iat": datetime.utcnow(),  # Issued at
-    }
-
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
-    return token
 
 
 # ==================== Request/Response Models ====================
@@ -113,6 +78,32 @@ class LoginRequest(BaseModel):
         }
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Request password reset email."""
+    email: EmailStr = Field(..., description="Email address")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "jane@example.com"
+            }
+        }
+
+
+class ResetPasswordRequest(BaseModel):
+    """Reset password with token from email."""
+    token: str = Field(..., description="Password reset token from email")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "token": "abc123token",
+                "new_password": "new_secure_password_456"
+            }
+        }
+
+
 class AuthResponse(BaseModel):
     """Successful authentication response."""
     success: bool = True
@@ -137,7 +128,6 @@ class AuthResponse(BaseModel):
 async def register(
     data: RegisterRequest,
     user_repo: UserRepository = Depends(get_user_repository),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
 ):
     """
     Register new user with email/password.
@@ -152,7 +142,7 @@ async def register(
         🎉 Success response with user profile and next step
     """
     try:
-        auth_service = get_auth_service(user_repo, subscription_repo)
+        auth_service = get_auth_service(user_repo)
 
         user, verification_token = await auth_service.register_with_email(
             email=data.email,
@@ -160,14 +150,21 @@ async def register(
             full_name=data.full_name,
         )
 
-        # Get subscription
-        subscription = subscription_repo.find_by_user_id(user.id)
-
         # Generate JWT access token
-        access_token = create_access_token(
-            user_id=str(user.id),
-            email=user.email
-        )
+        access_token = create_access_token(user.id, user.email)
+
+        # Get trial status
+        trial_status = auth_service.check_trial_status(user)
+
+        # Calculate jobs remaining based on tier
+        from apps.shared.models.enums import SubscriptionTier
+        tier_limits = {
+            SubscriptionTier.FREE: 10,
+            SubscriptionTier.CREATOR: 100,
+            SubscriptionTier.STUDIO: float('inf')
+        }
+        limit = tier_limits.get(user.subscription_tier, 10)
+        jobs_remaining = max(0, int(limit) - user.monthly_generation_count) if limit != float('inf') else 999999
 
         # Build response with helpful guidance
         return AuthResponse(
@@ -183,9 +180,9 @@ async def register(
                 "is_verified": user.is_verified,
             },
             subscription={
-                "tier": subscription.tier,
-                "trial_days_remaining": 7,
-                "jobs_remaining": subscription.monthly_job_limit,
+                "tier": user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier),
+                "trial_days_remaining": trial_status["days_remaining"],
+                "jobs_remaining": jobs_remaining,
             },
             next_step="/onboarding/connect-drive",
             onboarding_complete=False,
@@ -212,7 +209,6 @@ async def register(
 async def login(
     data: LoginRequest,
     user_repo: UserRepository = Depends(get_user_repository),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
 ):
     """
     Login with email/password.
@@ -221,24 +217,31 @@ async def login(
         👋 Welcome back message with user profile
     """
     try:
-        auth_service = get_auth_service(user_repo, subscription_repo)
+        auth_service = get_auth_service(user_repo)
 
         user = await auth_service.login_with_email(
             email=data.email,
             password=data.password,
         )
 
-        # Get subscription
-        subscription = subscription_repo.find_by_user_id(user.id)
-
         # Generate JWT access token
-        access_token = create_access_token(
-            user_id=str(user.id),
-            email=user.email
-        )
+        access_token = create_access_token(user.id, user.email)
+
+        # Get trial status
+        trial_status = auth_service.check_trial_status(user)
+
+        # Calculate jobs remaining based on tier
+        from apps.shared.models.enums import SubscriptionTier
+        tier_limits = {
+            SubscriptionTier.FREE: 10,
+            SubscriptionTier.CREATOR: 100,
+            SubscriptionTier.STUDIO: float('inf')
+        }
+        limit = tier_limits.get(user.subscription_tier, 10)
+        jobs_remaining = max(0, int(limit) - user.monthly_generation_count) if limit != float('inf') else 999999
 
         # Check if onboarding is complete
-        onboarding_complete = user.has_drive_connected
+        onboarding_complete = user.onboarding_completed
 
         # Determine next step
         if not onboarding_complete:
@@ -257,12 +260,11 @@ async def login(
                 "full_name": user.full_name,
                 "avatar_url": user.avatar_url,
                 "is_verified": user.is_verified,
-                "drive_connected": user.has_drive_connected,
             },
             subscription={
-                "tier": subscription.tier,
-                "jobs_remaining": subscription.remaining_jobs,
-                "credits_remaining": subscription.remaining_credits,
+                "tier": user.subscription_tier.value if hasattr(user.subscription_tier, 'value') else str(user.subscription_tier),
+                "trial_days_remaining": trial_status["days_remaining"],
+                "jobs_remaining": jobs_remaining,
             },
             next_step=next_step,
             onboarding_complete=onboarding_complete,
@@ -280,104 +282,81 @@ async def login(
         )
 
 
-@router.get(
-    "/google",
-    summary="Sign in with Google",
-    description="Start Google OAuth flow. One click, no passwords! 🚀",
+@router.post(
+    "/forgot-password",
+    summary="Request password reset",
+    description="Send password reset email to user.",
 )
-async def google_oauth_start():
-    """
-    Initiate Google OAuth flow.
-
-    UX: User clicks "Continue with Google" button
-
-    Returns:
-        Redirect to Google's OAuth consent screen
-    """
-    from google_auth_oauthlib.flow import Flow
-
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [settings.GOOGLE_REDIRECT_URI],
-            }
-        },
-        scopes=[
-            "openid",
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/drive.file",
-        ],
-    )
-
-    flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
-
-    authorization_url, state = flow.authorization_url(
-        access_type="offline",  # Get refresh token
-        include_granted_scopes="true",
-        prompt="consent",  # Force consent to get refresh token
-    )
-
-    logger.info("google_oauth_started", redirect_url=authorization_url)
-
-    # Redirect user to Google
-    return RedirectResponse(url=authorization_url)
-
-
-@router.get(
-    "/google/callback",
-    summary="Google OAuth callback",
-    description="Google redirects here after user grants permission.",
-)
-async def google_oauth_callback(
-    code: str,
-    state: Optional[str] = None,
+async def forgot_password(
+    data: ForgotPasswordRequest,
     user_repo: UserRepository = Depends(get_user_repository),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
 ):
     """
-    Handle Google OAuth callback.
+    Request password reset email.
 
-    UX Flow:
-    1. Google redirects here with auth code
-    2. We exchange code for tokens
-    3. Create/login user
-    4. Redirect to dashboard or onboarding
+    Security note: Always returns success even if email doesn't exist
+    (don't reveal which emails are registered).
 
     Returns:
-        Redirect to appropriate next step
+        Success message
     """
     try:
-        auth_service = get_auth_service(user_repo, subscription_repo)
+        auth_service = get_auth_service(user_repo)
 
-        user = await auth_service.login_with_google(auth_code=code)
+        await auth_service.request_password_reset(email=data.email)
 
-        # Check if onboarding complete
-        if user.has_drive_connected:
-            # Existing user, go to dashboard
-            redirect_url = f"{settings.FRONTEND_URL}/dashboard?welcome=back"
-        else:
-            # New user, go to onboarding
-            redirect_url = f"{settings.FRONTEND_URL}/onboarding?welcome=true"
+        return {
+            "success": True,
+            "message": "If that email is registered, you'll receive a password reset link shortly. Check your inbox!",
+        }
 
-        logger.info(
-            "google_oauth_success",
-            user_id=user.id,
-            is_new_user=not user.has_drive_connected,
+    except Exception as e:
+        logger.error("password_reset_request_failed", error=str(e))
+        # Still return success (don't reveal errors)
+        return {
+            "success": True,
+            "message": "If that email is registered, you'll receive a password reset link shortly. Check your inbox!",
+        }
+
+
+@router.post(
+    "/reset-password",
+    summary="Reset password with token",
+    description="Complete password reset with token from email.",
+)
+async def reset_password(
+    data: ResetPasswordRequest,
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    """
+    Reset password with token from email.
+
+    Returns:
+        Success message
+    """
+    try:
+        auth_service = get_auth_service(user_repo)
+
+        user = await auth_service.reset_password(
+            token=data.token,
+            new_password=data.new_password,
         )
 
-        return RedirectResponse(url=redirect_url)
+        return {
+            "success": True,
+            "message": "Password reset successfully! You can now log in with your new password.",
+            "redirect": "/login",
+        }
 
     except AuthError as e:
-        logger.error("google_oauth_callback_failed", error=str(e))
-
-        # Redirect to error page with friendly message
-        error_url = f"{settings.FRONTEND_URL}/auth/error?message={e}"
-        return RedirectResponse(url=error_url)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "reset_failed",
+                "message": str(e),
+                "action": "request_new_reset",
+            }
+        )
 
 
 @router.get(
@@ -387,7 +366,7 @@ async def google_oauth_callback(
 )
 async def get_me(
     current_user: User = Depends(get_current_user),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
 ):
     """
     Get current user profile.
@@ -400,7 +379,18 @@ async def get_me(
     Returns:
         User profile with subscription info
     """
-    subscription = subscription_repo.find_by_user_id(current_user.id)
+    auth_service = get_auth_service(user_repo)
+    trial_status = auth_service.check_trial_status(current_user)
+
+    # Calculate jobs remaining based on tier
+    from apps.shared.models.enums import SubscriptionTier
+    tier_limits = {
+        SubscriptionTier.FREE: 10,
+        SubscriptionTier.CREATOR: 100,
+        SubscriptionTier.STUDIO: float('inf')
+    }
+    limit = tier_limits.get(current_user.subscription_tier, 10)
+    jobs_remaining = max(0, int(limit) - current_user.monthly_generation_count) if limit != float('inf') else 999999
 
     return {
         "user": {
@@ -409,18 +399,18 @@ async def get_me(
             "full_name": current_user.full_name,
             "avatar_url": current_user.avatar_url,
             "is_verified": current_user.is_verified,
-            "drive_connected": current_user.has_drive_connected,
-            "total_jobs_run": current_user.total_jobs_run,
+            "total_generations": current_user.total_generations,
             "member_since": current_user.created_at.isoformat(),
         },
         "subscription": {
-            "tier": subscription.tier,
-            "status": subscription.status,
-            "jobs_remaining": subscription.remaining_jobs,
-            "credits_remaining": subscription.remaining_credits,
-            "trial_ends": subscription.trial_end.isoformat() if subscription.trial_end else None,
+            "tier": current_user.subscription_tier.value if hasattr(current_user.subscription_tier, 'value') else str(current_user.subscription_tier),
+            "status": current_user.subscription_status.value if hasattr(current_user.subscription_status, 'value') else str(current_user.subscription_status),
+            "jobs_remaining": jobs_remaining,
+            "trial_days_remaining": trial_status["days_remaining"],
+            "trial_active": trial_status["is_trial_active"],
+            "trial_end_date": trial_status.get("trial_end_date"),
         },
-        "onboarding_complete": current_user.has_drive_connected,
+        "onboarding_complete": current_user.onboarding_completed,
     }
 
 

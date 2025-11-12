@@ -68,6 +68,9 @@ class User(BaseModel):
     email_notifications = Column(Boolean, default=True, nullable=False)
     webhook_url = Column(String(500), nullable=True)
 
+    # Onboarding
+    onboarding_completed = Column(Boolean, default=False, nullable=False)
+
     # Activity tracking
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     login_count = Column(Integer, default=0, nullable=False)
