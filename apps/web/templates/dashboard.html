@@ -1,377 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - CREATOR</title>
+    <title>Dashboard - Creator</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(91, 127, 255)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <style>
-        /*
-        Dashboard: Deel-Inspired Dark Theme
-        - Dark charcoal background
-        - Bold geometric icons
-        - Grid-based layout
-        - High contrast elements
-        - Clean, modern typography
-        */
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            /* Colors */
-            --bg-dark: #0a0a0a;
-            --bg-card: #1a1a1a;
-            --bg-card-hover: #252525;
-            --coral-primary: #FF6E6B;
-            --coral-secondary: #FF8E53;
-            --cream: #F5E6D3;
-            --gray-text: #9ca3af;
-            --white: #ffffff;
-            --border-subtle: rgba(255, 255, 255, 0.1);
-
-            /* Spacing */
-            --spacing-xs: 0.5rem;
-            --spacing-sm: 1rem;
-            --spacing-md: 1.5rem;
-            --spacing-lg: 2rem;
-            --spacing-xl: 3rem;
-
-            /* Radius */
-            --radius-sm: 0.5rem;
-            --radius-md: 1rem;
-            --radius-lg: 1.5rem;
-
-            /* Transitions */
-            --transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        /* Dot grid background pattern + gradients (matching landing page) */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-dark);
-            color: var(--white);
-            min-height: 100vh;
+            background-color: #0B0C0F;
+            background-image:
+                radial-gradient(ellipse at 30% 20%, rgba(91,127,255,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(147,51,234,0.12) 0%, transparent 50%),
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+            background-size: 100% 100%, 100% 100%, 40px 40px;
         }
 
-        /* Navbar */
-        .navbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: var(--spacing-md) var(--spacing-xl);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
+        /* Glass effect (matching landing page) */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .logo {
-            font-size: 1.75rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            background: linear-gradient(135deg, var(--coral-primary) 0%, var(--coral-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-transform: uppercase;
+        /* Hide scrollbar but keep functionality */
+        body::-webkit-scrollbar {
+            width: 8px;
         }
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
+        body::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        .avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-weight: 700;
-            font-size: 1.25rem;
-            border: 2px solid var(--border-subtle);
+        body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
         }
 
-        .user-name {
-            font-weight: 600;
-            color: var(--white);
-        }
-
-        /* Container */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: var(--spacing-xl) var(--spacing-lg);
-        }
-
-        /* Welcome Section */
-        .welcome {
-            margin-bottom: var(--spacing-xl);
-        }
-
-        .welcome h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--white);
-            margin-bottom: var(--spacing-sm);
-            letter-spacing: -0.02em;
-        }
-
-        .welcome p {
-            color: var(--gray-text);
-            font-size: 1.125rem;
-        }
-
-        /* Stats Grid */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--spacing-lg);
-            margin-bottom: var(--spacing-xl);
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-lg);
-            transition: all var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
-            opacity: 0;
-            transition: opacity var(--transition);
-        }
-
-        .stat-card:hover {
-            background: var(--bg-card-hover);
-            transform: translateY(-4px);
-            border-color: var(--coral-primary);
-        }
-
-        .stat-card:hover::before {
-            opacity: 1;
-        }
-
-        .stat-icon {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: var(--spacing-md);
-            position: relative;
-        }
-
-        .stat-icon svg {
-            width: 32px;
-            height: 32px;
-            stroke: var(--white);
-            stroke-width: 2.5;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .stat-label {
-            color: var(--gray-text);
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: var(--spacing-xs);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--white);
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .stat-badge {
-            display: inline-block;
-            background: rgba(255, 110, 107, 0.15);
-            color: var(--coral-primary);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border: 1px solid rgba(255, 110, 107, 0.3);
-        }
-
-        /* Quick Actions Grid */
-        .quick-actions {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-xl);
-        }
-
-        .quick-actions h2 {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: var(--white);
-            margin-bottom: var(--spacing-lg);
-            letter-spacing: -0.01em;
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: var(--spacing-md);
-        }
-
-        .action-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: var(--spacing-md);
-            padding: var(--spacing-xl);
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            color: var(--white);
-            font-weight: 700;
-            font-size: 1rem;
-            transition: all var(--transition);
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .action-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
-            opacity: 0;
-            transition: opacity var(--transition);
-        }
-
-        .action-btn:hover {
-            border-color: var(--coral-primary);
-            transform: translateY(-4px);
-        }
-
-        .action-btn:hover::before {
-            opacity: 0.1;
-        }
-
-        .action-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--coral-primary), var(--coral-secondary));
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 1;
-            box-shadow: 0 8px 24px rgba(255, 110, 107, 0.2);
-            transition: all var(--transition);
-        }
-
-        .action-btn:hover .action-icon {
-            transform: scale(1.1) rotate(5deg);
-            box-shadow: 0 12px 32px rgba(255, 110, 107, 0.4);
-        }
-
-        .action-icon svg {
-            width: 40px;
-            height: 40px;
-            stroke: var(--white);
-            stroke-width: 2.5;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .action-text {
-            position: relative;
-            z-index: 1;
-            font-size: 1.125rem;
-        }
-
-        /* Coming Soon Banner */
-        .coming-soon {
-            background: rgba(255, 142, 83, 0.1);
-            border: 2px solid rgba(255, 142, 83, 0.3);
-            padding: var(--spacing-lg);
-            border-radius: var(--radius-md);
-            margin-top: var(--spacing-xl);
-            text-align: center;
-        }
-
-        .coming-soon strong {
-            color: var(--coral-secondary);
-            font-size: 1.125rem;
-            display: block;
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .coming-soon p {
-            color: var(--gray-text);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: var(--spacing-md);
-            }
-
-            .logo {
-                font-size: 1.5rem;
-            }
-
-            .container {
-                padding: var(--spacing-lg) var(--spacing-md);
-            }
-
-            .welcome h1 {
-                font-size: 2rem;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .action-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Animations */
+        /* Card fade in animation */
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
@@ -388,106 +76,210 @@
         .stat-card:nth-child(3) { animation-delay: 0.3s; }
     </style>
 </head>
-<body>
-    <div class="navbar">
-        <div class="logo">CREATOR</div>
-        <div class="user-info">
-            <div class="avatar">{{ user.full_name[0] if user.full_name else 'U' }}</div>
-            <span class="user-name">{{ user.full_name or user.email }}</span>
-        </div>
-    </div>
+<body class="min-h-screen text-white antialiased" x-data="{ showLogoutMenu: false }">
 
-    <div class="container">
-        <div class="welcome">
-            <h1>Welcome back, {{ user.full_name or 'Creator' }}</h1>
-            <p>Here's what's happening with your projects</p>
+    <!-- Header (matching landing page) -->
+    <header class="sticky top-0 z-50 glass border-b border-white/10 px-8 py-6">
+        <div class="mx-auto flex max-w-7xl items-center justify-between">
+            <a href="/" class="text-2xl font-bold tracking-tight">CREATOR</a>
+
+            <!-- Nav + User -->
+            <div class="flex items-center gap-8">
+                <!-- Navigation -->
+                <nav class="hidden gap-8 text-base text-zinc-300 md:flex">
+                    <a class="font-medium transition hover:text-white" href="/dashboard">Dashboard</a>
+                    <a class="font-medium transition hover:text-white" href="/docs">API Docs</a>
+                </nav>
+
+                <!-- User dropdown -->
+                <div class="relative">
+                    <button
+                        @click="showLogoutMenu = !showLogoutMenu"
+                        @click.away="showLogoutMenu = false"
+                        class="flex items-center gap-3 rounded-full bg-white/5 px-4 py-2 ring-1 ring-white/10 transition hover:bg-white/10"
+                    >
+                        <img
+                            src="{{ user.avatar_url if user and user.avatar_url else '/assets/default-avatar.png' }}"
+                            alt="{{ user.full_name if user and user.full_name else 'User' }}"
+                            class="h-8 w-8 rounded-full ring-2 ring-white/20"
+                        />
+                        <span class="text-base font-medium text-zinc-300">{{ user.full_name if user and user.full_name else user.email if user else 'User' }}</span>
+                        <svg class="h-4 w-4 text-zinc-400 transition" :class="showLogoutMenu && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown menu -->
+                    <div
+                        x-show="showLogoutMenu"
+                        x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="transform opacity-0 scale-95"
+                        x-transition:enter-end="transform opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="transform opacity-100 scale-100"
+                        x-transition:leave-end="transform opacity-0 scale-95"
+                        class="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-white/10 bg-[#0B0C0F]/95 shadow-lg backdrop-blur-xl ring-1 ring-black/5"
+                        style="display: none;"
+                    >
+                        <div class="py-1">
+                            <a href="/settings" class="block px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white">
+                                Settings
+                            </a>
+                            <button
+                                @click="async () => {
+                                    const response = await fetch('/auth/logout', { method: 'POST' });
+                                    if (response.ok) {
+                                        localStorage.removeItem('access_token');
+                                        document.cookie = 'access_token=; path=/; max-age=0';
+                                        window.location.href = '/login';
+                                    }
+                                }"
+                                class="block w-full px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-white/5 hover:text-red-300"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="mx-auto max-w-7xl px-8 py-12">
+
+        <!-- Welcome Section -->
+        <div class="mb-12">
+            <h1 class="mb-2 text-5xl font-bold tracking-tight">
+                Welcome back, {{ user.full_name if user and user.full_name else 'Creator' }}
+            </h1>
+            <p class="text-xl text-zinc-400">
+                Here's what's happening with your projects
+            </p>
         </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
+        <!-- Stats Grid -->
+        <div class="mb-12 grid gap-6 md:grid-cols-3">
+            <!-- Jobs Remaining -->
+            <div class="stat-card glass group rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,.45)] transition hover:border-primary/50 hover:shadow-[0_20px_60px_rgba(91,127,255,.2)]">
+                <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)]">
+                    <svg class="h-8 w-8 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M12 6v6l4 2"/>
                     </svg>
                 </div>
-                <div class="stat-label">Jobs Remaining</div>
-                <div class="stat-value">10</div>
-                <span class="stat-badge">Free Tier</span>
+                <div class="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-400">Jobs Remaining</div>
+                <div class="mb-2 text-4xl font-bold text-white">10</div>
+                <span class="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary ring-1 ring-primary/20">
+                    Free Tier
+                </span>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
+            <!-- Trial Days -->
+            <div class="stat-card glass group rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,.45)] transition hover:border-primary/50 hover:shadow-[0_20px_60px_rgba(91,127,255,.2)]">
+                <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)]">
+                    <svg class="h-8 w-8 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                         <line x1="16" y1="2" x2="16" y2="6"/>
                         <line x1="8" y1="2" x2="8" y2="6"/>
                         <line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
                 </div>
-                <div class="stat-label">Trial Days Left</div>
-                <div class="stat-value">7</div>
-                <span class="stat-badge">Active</span>
+                <div class="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-400">Trial Days Left</div>
+                <div class="mb-2 text-4xl font-bold text-white">7</div>
+                <span class="inline-block rounded-full bg-green-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-400 ring-1 ring-green-500/20">
+                    Active
+                </span>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
+            <!-- Total Jobs -->
+            <div class="stat-card glass group rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,.45)] transition hover:border-primary/50 hover:shadow-[0_20px_60px_rgba(91,127,255,.2)]">
+                <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)]">
+                    <svg class="h-8 w-8 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                     </svg>
                 </div>
-                <div class="stat-label">Total Jobs</div>
-                <div class="stat-value">0</div>
-                <span class="stat-badge">All Time</span>
+                <div class="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-400">Total Jobs</div>
+                <div class="mb-2 text-4xl font-bold text-white">0</div>
+                <span class="inline-block rounded-full bg-zinc-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-zinc-400 ring-1 ring-zinc-500/20">
+                    All Time
+                </span>
             </div>
         </div>
 
-        <div class="quick-actions">
-            <h2>Quick Actions</h2>
-            <div class="action-grid">
-                <a href="/onboarding/connect-drive" class="action-btn">
-                    <div class="action-icon">
-                        <svg viewBox="0 0 24 24">
+        <!-- Quick Actions -->
+        <div class="glass rounded-2xl p-8 shadow-[0_20px_60px_rgba(0,0,0,.45)]">
+            <h2 class="mb-8 text-3xl font-bold">Quick Actions</h2>
+
+            <!-- Action Grid -->
+            <div class="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <!-- Connect Drive -->
+                <a
+                    href="/onboarding/connect-drive"
+                    class="group flex flex-col items-center gap-4 rounded-xl bg-white/5 p-6 text-center ring-1 ring-white/10 transition hover:bg-white/10 hover:ring-primary/50"
+                >
+                    <div class="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)] transition group-hover:scale-110 group-hover:shadow-[0_12px_32px_rgba(91,127,255,.5)]">
+                        <svg class="h-10 w-10 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                         </svg>
                     </div>
-                    <span class="action-text">Connect Drive</span>
+                    <span class="text-lg font-semibold text-white">Connect Drive</span>
                 </a>
-                <a href="/jobs/new" class="action-btn">
-                    <div class="action-icon">
-                        <svg viewBox="0 0 24 24">
+
+                <!-- Upload Image -->
+                <a
+                    href="/jobs/new"
+                    class="group flex flex-col items-center gap-4 rounded-xl bg-white/5 p-6 text-center ring-1 ring-white/10 transition hover:bg-white/10 hover:ring-primary/50"
+                >
+                    <div class="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)] transition group-hover:scale-110 group-hover:shadow-[0_12px_32px_rgba(91,127,255,.5)]">
+                        <svg class="h-10 w-10 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                             <circle cx="8.5" cy="8.5" r="1.5"/>
                             <polyline points="21 15 16 10 5 21"/>
                         </svg>
                     </div>
-                    <span class="action-text">Upload Image</span>
+                    <span class="text-lg font-semibold text-white">Upload Image</span>
                 </a>
-                <a href="/docs" class="action-btn">
-                    <div class="action-icon">
-                        <svg viewBox="0 0 24 24">
+
+                <!-- API Docs -->
+                <a
+                    href="/docs"
+                    class="group flex flex-col items-center gap-4 rounded-xl bg-white/5 p-6 text-center ring-1 ring-white/10 transition hover:bg-white/10 hover:ring-primary/50"
+                >
+                    <div class="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)] transition group-hover:scale-110 group-hover:shadow-[0_12px_32px_rgba(91,127,255,.5)]">
+                        <svg class="h-10 w-10 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                         </svg>
                     </div>
-                    <span class="action-text">API Docs</span>
+                    <span class="text-lg font-semibold text-white">API Docs</span>
                 </a>
-                <a href="/settings" class="action-btn">
-                    <div class="action-icon">
-                        <svg viewBox="0 0 24 24">
+
+                <!-- Settings -->
+                <a
+                    href="/settings"
+                    class="group flex flex-col items-center gap-4 rounded-xl bg-white/5 p-6 text-center ring-1 ring-white/10 transition hover:bg-white/10 hover:ring-primary/50"
+                >
+                    <div class="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-[0_8px_24px_rgba(91,127,255,.3)] transition group-hover:scale-110 group-hover:shadow-[0_12px_32px_rgba(91,127,255,.5)]">
+                        <svg class="h-10 w-10 stroke-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="3"/>
                             <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
                         </svg>
                     </div>
-                    <span class="action-text">Settings</span>
+                    <span class="text-lg font-semibold text-white">Settings</span>
                 </a>
             </div>
 
-            <div class="coming-soon">
-                <strong>Dashboard Under Construction</strong>
-                <p>Full job management, real-time progress tracking, and analytics coming soon!</p>
+            <!-- Coming Soon Notice -->
+            <div class="rounded-xl bg-orange-500/10 p-6 ring-1 ring-orange-500/20">
+                <div class="mb-2 text-lg font-bold text-orange-400">Dashboard Under Construction</div>
+                <p class="text-sm text-zinc-400">
+                    Full job management, real-time progress tracking, and analytics coming soon!
+                </p>
             </div>
         </div>
-    </div>
+
+    </main>
+
 </body>
 </html>

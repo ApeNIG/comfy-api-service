@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from apps.creator.dependencies import get_current_user_optional
-from apps.creator.models.domain import User
+from apps.creator.models import User
 
 router = APIRouter()
 
@@ -29,29 +29,27 @@ async def home_page(
     user: User = Depends(get_current_user_optional),
 ):
     """
-    Home page.
+    Landing page with beautiful hero design.
 
-    If authenticated: redirect to dashboard
-    If not authenticated: redirect to login page
+    Shows:
+    - Hero headline and CTA
+    - Floating media tiles
+    - Glass status card (shows uploads if authenticated)
+    - Different CTAs based on auth state
     """
+    # Simulate recent uploads (replace with actual data later)
+    recent_uploads = []
     if user:
-        # Redirect to dashboard if already logged in
-        return templates.TemplateResponse(
-            "redirect.html",
-            {
-                "request": request,
-                "redirect_url": "/dashboard",
-                "message": f"Welcome back, {user.full_name}!",
-            },
-        )
+        # TODO: Fetch actual recent uploads from Google Drive
+        # For now, just pass empty list
+        recent_uploads = []
 
-    # Redirect to login page
     return templates.TemplateResponse(
-        "redirect.html",
+        "landing.html",
         {
             "request": request,
-            "redirect_url": "/login",
-            "message": "Welcome to Creator!",
+            "user": user,
+            "recent_uploads": recent_uploads,
         },
     )
 
@@ -91,13 +89,13 @@ async def login_page(
     )
 
 
-@router.get("/signup", response_class=HTMLResponse)
-async def signup_page(
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(
     request: Request,
     user: User = Depends(get_current_user_optional),
 ):
     """
-    Signup page (alias for login page with signup tab active).
+    Registration page (alias for auth page with signup tab active).
     """
     if user:
         return templates.TemplateResponse(
@@ -115,6 +113,25 @@ async def signup_page(
             "request": request,
             "google_oauth_url": "/auth/google",
             "default_tab": "signup",  # Show signup tab by default
+        },
+    )
+
+
+@router.get("/signup", response_class=HTMLResponse)
+async def signup_page(
+    request: Request,
+    user: User = Depends(get_current_user_optional),
+):
+    """
+    Signup page (alias for register page).
+    """
+    # Just redirect to /register for consistency
+    return templates.TemplateResponse(
+        "redirect.html",
+        {
+            "request": request,
+            "redirect_url": "/register",
+            "message": "Redirecting to signup...",
         },
     )
 

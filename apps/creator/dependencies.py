@@ -27,8 +27,8 @@ from apps.shared.infrastructure.database import get_db
 from apps.shared.infrastructure.cache import get_cache
 from apps.creator.repositories import (
     UserRepository,
-    SubscriptionRepository,
-    JobRepository,
+    # SubscriptionRepository,  # Temporarily disabled - subscription data embedded in User model
+    # JobRepository,  # Temporarily disabled - uses archived domain models
 )
 from apps.creator.models import User
 from config import settings
@@ -53,32 +53,34 @@ def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
 
-def get_subscription_repository(
-    db: Session = Depends(get_db),
-) -> SubscriptionRepository:
-    """
-    Get SubscriptionRepository instance.
+# Temporarily disabled - subscription data embedded in User model
+# def get_subscription_repository(
+#     db: Session = Depends(get_db),
+# ) -> SubscriptionRepository:
+#     """
+#     Get SubscriptionRepository instance.
+#
+#     Args:
+#         db: Database session (injected)
+#
+#     Returns:
+#         SubscriptionRepository instance
+#     """
+#     return SubscriptionRepository(db)
 
-    Args:
-        db: Database session (injected)
 
-    Returns:
-        SubscriptionRepository instance
-    """
-    return SubscriptionRepository(db)
-
-
-def get_job_repository(db: Session = Depends(get_db)) -> JobRepository:
-    """
-    Get JobRepository instance.
-
-    Args:
-        db: Database session (injected)
-
-    Returns:
-        JobRepository instance
-    """
-    return JobRepository(db)
+# Temporarily disabled - uses archived domain models
+# def get_job_repository(db: Session = Depends(get_db)) -> JobRepository:
+#     """
+#     Get JobRepository instance.
+#
+#     Args:
+#         db: Database session (injected)
+#
+#     Returns:
+#         JobRepository instance
+#     """
+#     return JobRepository(db)
 
 
 # ==================== Authentication Dependencies ====================
@@ -273,121 +275,122 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_current_user_with_subscription(
-    current_user: User = Depends(get_current_user),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
-) -> tuple[User, "Subscription | None"]:
-    """
-    Get current user with their subscription.
-
-    Args:
-        current_user: Current user (injected)
-        subscription_repo: Subscription repository (injected)
-
-    Returns:
-        Tuple of (user, subscription)
-    """
-    subscription = subscription_repo.find_by_user_id(current_user.id)
-    return current_user, subscription
-
-
-async def require_subscription(
-    current_user: User = Depends(get_current_user),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
-) -> "Subscription":
-    """
-    Require user to have an active subscription.
-
-    Args:
-        current_user: Current user (injected)
-        subscription_repo: Subscription repository (injected)
-
-    Returns:
-        Active subscription
-
-    Raises:
-        HTTPException: 403 if no active subscription
-    """
-    subscription = subscription_repo.find_by_user_id(current_user.id)
-
-    if not subscription or not subscription.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active subscription required",
-        )
-
-    return subscription
-
-
-async def require_paid_subscription(
-    current_user: User = Depends(get_current_user),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
-) -> "Subscription":
-    """
-    Require user to have a paid subscription (Creator or Studio tier).
-
-    Args:
-        current_user: Current user (injected)
-        subscription_repo: Subscription repository (injected)
-
-    Returns:
-        Paid subscription
-
-    Raises:
-        HTTPException: 403 if no paid subscription
-    """
-    from apps.shared.models.enums import SubscriptionTier
-
-    subscription = subscription_repo.find_by_user_id(current_user.id)
-
-    if not subscription or not subscription.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active subscription required",
-        )
-
-    if subscription.tier == SubscriptionTier.FREE.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Paid subscription required (Creator or Studio tier)",
-        )
-
-    return subscription
-
-
-async def check_job_quota(
-    current_user: User = Depends(get_current_user),
-    subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
-) -> "Subscription":
-    """
-    Check if user has remaining job quota.
-
-    Args:
-        current_user: Current user (injected)
-        subscription_repo: Subscription repository (injected)
-
-    Returns:
-        Subscription with available quota
-
-    Raises:
-        HTTPException: 429 if quota exceeded
-    """
-    subscription = subscription_repo.find_by_user_id(current_user.id)
-
-    if not subscription or not subscription.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active subscription required",
-        )
-
-    if not subscription.can_run_job:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Monthly job quota exceeded. Upgrade to Creator or Studio tier for unlimited jobs.",
-            headers={"Retry-After": "86400"},  # Retry after 1 day
-        )
-
-    return subscription
+# Temporarily disabled - subscription data embedded in User model
+# async def get_current_user_with_subscription(
+#     current_user: User = Depends(get_current_user),
+#     subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
+# ) -> tuple[User, "Subscription | None"]:
+#     """
+#     Get current user with their subscription.
+#
+#     Args:
+#         current_user: Current user (injected)
+#         subscription_repo: Subscription repository (injected)
+#
+#     Returns:
+#         Tuple of (user, subscription)
+#     """
+#     subscription = subscription_repo.find_by_user_id(current_user.id)
+#     return current_user, subscription
+#
+#
+# async def require_subscription(
+#     current_user: User = Depends(get_current_user),
+#     subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
+# ) -> "Subscription":
+#     """
+#     Require user to have an active subscription.
+#
+#     Args:
+#         current_user: Current user (injected)
+#         subscription_repo: Subscription repository (injected)
+#
+#     Returns:
+#         Active subscription
+#
+#     Raises:
+#         HTTPException: 403 if no active subscription
+#     """
+#     subscription = subscription_repo.find_by_user_id(current_user.id)
+#
+#     if not subscription or not subscription.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Active subscription required",
+#         )
+#
+#     return subscription
+#
+#
+# async def require_paid_subscription(
+#     current_user: User = Depends(get_current_user),
+#     subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
+# ) -> "Subscription":
+#     """
+#     Require user to have a paid subscription (Creator or Studio tier).
+#
+#     Args:
+#         current_user: Current user (injected)
+#         subscription_repo: Subscription repository (injected)
+#
+#     Returns:
+#         Paid subscription
+#
+#     Raises:
+#         HTTPException: 403 if no paid subscription
+#     """
+#     from apps.shared.models.enums import SubscriptionTier
+#
+#     subscription = subscription_repo.find_by_user_id(current_user.id)
+#
+#     if not subscription or not subscription.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Active subscription required",
+#         )
+#
+#     if subscription.tier == SubscriptionTier.FREE.value:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Paid subscription required (Creator or Studio tier)",
+#         )
+#
+#     return subscription
+#
+#
+# async def check_job_quota(
+#     current_user: User = Depends(get_current_user),
+#     subscription_repo: SubscriptionRepository = Depends(get_subscription_repository),
+# ) -> "Subscription":
+#     """
+#     Check if user has remaining job quota.
+#
+#     Args:
+#         current_user: Current user (injected)
+#         subscription_repo: Subscription repository (injected)
+#
+#     Returns:
+#         Subscription with available quota
+#
+#     Raises:
+#         HTTPException: 429 if quota exceeded
+#     """
+#     subscription = subscription_repo.find_by_user_id(current_user.id)
+#
+#     if not subscription or not subscription.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Active subscription required",
+#         )
+#
+#     if not subscription.can_run_job:
+#         raise HTTPException(
+#             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+#             detail=f"Monthly job quota exceeded. Upgrade to Creator or Studio tier for unlimited jobs.",
+#             headers={"Retry-After": "86400"},  # Retry after 1 day
+#         )
+#
+#     return subscription
 
 
 # ==================== Admin Dependencies ====================

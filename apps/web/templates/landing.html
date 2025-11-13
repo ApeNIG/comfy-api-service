@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator - Auto-edit your stories</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(91, 127, 255)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        /* Custom animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Dot grid background pattern + gradients */
+        body {
+            background-color: #0B0C0F;
+            background-image:
+                radial-gradient(ellipse at 30% 20%, rgba(91,127,255,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(147,51,234,0.12) 0%, transparent 50%),
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+            background-size: 100% 100%, 100% 100%, 40px 40px;
+        }
+
+        /* Glass effect with stronger backdrop */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide scrollbar but keep functionality */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden text-white antialiased">
+
+    <!-- Main container -->
+    <div class="relative" x-data="{ ...landingPage(), showLogoutMenu: false }">
+
+        <!-- Header -->
+        <header class="relative z-20 flex items-center justify-between px-8 py-8">
+            <div class="text-2xl font-bold tracking-tight">CREATOR</div>
+
+            <!-- Desktop nav -->
+            <nav class="hidden gap-10 text-base text-zinc-300 md:flex">
+                <a class="font-medium transition hover:text-white" href="#features">Features</a>
+                <a class="font-medium transition hover:text-white" href="#templates">Templates</a>
+                <a class="font-medium transition hover:text-white" href="#pricing">Pricing</a>
+            </nav>
+
+            <!-- Auth buttons -->
+            <div class="flex items-center gap-4">
+                {% if user %}
+                    <a href="/dashboard" class="rounded-full bg-white/5 px-5 py-2.5 text-base font-medium text-zinc-200 ring-1 ring-white/10 transition hover:bg-white/10">
+                        Dashboard
+                    </a>
+                    <!-- User dropdown -->
+                    <div class="relative">
+                        <button
+                            @click="showLogoutMenu = !showLogoutMenu"
+                            @click.away="showLogoutMenu = false"
+                            class="flex items-center gap-3 rounded-full bg-white/5 px-4 py-2 ring-1 ring-white/10 transition hover:bg-white/10"
+                        >
+                            <img src="{{ user.avatar_url or '/assets/default-avatar.png' }}" alt="{{ user.full_name }}" class="h-8 w-8 rounded-full ring-2 ring-white/20" />
+                            <span class="text-base font-medium text-zinc-300">{{ user.full_name }}</span>
+                            <svg class="h-4 w-4 text-zinc-400 transition" :class="showLogoutMenu && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown menu -->
+                        <div
+                            x-show="showLogoutMenu"
+                            x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="transform opacity-0 scale-95"
+                            x-transition:enter-end="transform opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="transform opacity-100 scale-100"
+                            x-transition:leave-end="transform opacity-0 scale-95"
+                            class="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-white/10 bg-[#0B0C0F]/95 shadow-lg backdrop-blur-xl ring-1 ring-black/5"
+                            style="display: none;"
+                        >
+                            <div class="py-1">
+                                <a href="/settings" class="block px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white">
+                                    Settings
+                                </a>
+                                <button
+                                    @click="async () => {
+                                        const response = await fetch('/auth/logout', { method: 'POST' });
+                                        if (response.ok) {
+                                            localStorage.removeItem('access_token');
+                                            document.cookie = 'access_token=; path=/; max-age=0';
+                                            window.location.href = '/login';
+                                        }
+                                    }"
+                                    class="block w-full px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-white/5 hover:text-red-300"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="/login" class="rounded-full bg-white/5 px-5 py-2.5 text-base font-medium text-zinc-200 ring-1 ring-white/10 transition hover:bg-white/10">
+                        Login
+                    </a>
+                    <a href="/register" class="rounded-full bg-primary px-6 py-2.5 text-base font-semibold text-white shadow-[0_8px_30px_rgba(91,127,255,0.4)] transition hover:brightness-110">
+                        Sign up
+                    </a>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <main class="relative mx-auto max-w-[1200px] px-6 pb-28 pt-20 lg:px-8 lg:pt-28">
+            <div class="lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:items-center">
+
+                <!-- Left: Headline & floating media -->
+                <section class="relative">
+                    <!-- Headline -->
+                    <h1 class="text-[64px] font-bold leading-[1.05] tracking-[-0.02em] lg:text-[84px]">
+                        Auto‑edit your <span class="text-white/90">stories</span>
+                    </h1>
+
+                    <p class="mt-5 max-w-[44ch] text-lg text-zinc-300 lg:text-xl">
+                        Your AI studio for automated storytelling. Connect a folder, and we assemble montages, reels, and slideshows with cinematic looks.
+                    </p>
+
+                    <!-- CTA Buttons -->
+                    <div class="mt-8 flex flex-wrap items-center gap-4">
+                        {% if user %}
+                            {% if not user.onboarding_completed %}
+                                <a href="/onboarding" class="flex h-12 items-center rounded-xl bg-[#5B7FFF] px-6 text-base font-medium text-white shadow-[0_10px_30px_rgba(91,127,255,.45)] transition hover:brightness-110">
+                                    Complete Setup
+                                </a>
+                            {% else %}
+                                <a href="/dashboard" class="flex h-12 items-center rounded-xl bg-[#5B7FFF] px-6 text-base font-medium text-white shadow-[0_10px_30px_rgba(91,127,255,.45)] transition hover:brightness-110">
+                                    Go to Dashboard
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <a href="/register" class="flex h-12 items-center rounded-xl bg-[#5B7FFF] px-6 text-base font-medium text-white shadow-[0_10px_30px_rgba(91,127,255,.45)] transition hover:brightness-110">
+                                Get Started
+                            </a>
+                            <a href="#demo" class="flex h-12 items-center rounded-xl bg-white/5 px-6 text-base text-white ring-1 ring-white/10 transition hover:bg-white/10">
+                                View Demo
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Floating tiles (contained within hero) -->
+                    <div class="pointer-events-none relative mt-12 hidden h-[300px] lg:block">
+                        <template x-for="(tile, index) in floatingTiles" :key="index">
+                            <div
+                                class="absolute h-16 w-16 rounded-2xl opacity-70 ring-1 ring-white/20"
+                                :class="`float-animation`"
+                                :style="`
+                                    left: ${tile.x}%;
+                                    top: ${tile.y}%;
+                                    background: linear-gradient(135deg, ${tile.color1}, ${tile.color2});
+                                    animation-delay: ${tile.delay}s;
+                                `"
+                            >
+                            </div>
+                        </template>
+                    </div>
+                </section>
+
+                <!-- Right: Glass status card -->
+                <section class="relative mt-12 lg:mt-0">
+                    <!-- Card -->
+                    <div class="glass rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,.45)]">
+                        <div class="mb-2 text-lg font-medium">
+                            {% if user and recent_uploads %}
+                                New uploads detected
+                            {% else %}
+                                Ready to start?
+                            {% endif %}
+                        </div>
+
+                        <p class="mb-4 text-sm text-zinc-300">
+                            {% if user and recent_uploads %}
+                                {{ recent_uploads|length }} new {{ 'image' if recent_uploads|length == 1 else 'images' }} from today
+                            {% else %}
+                                Connect your Google Drive to get started
+                            {% endif %}
+                        </p>
+
+                        <!-- Preview image area -->
+                        <div class="mb-4 h-44 overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-transparent ring-1 ring-white/10">
+                            {% if user and recent_uploads and recent_uploads[0].thumbnail_url %}
+                                <img src="{{ recent_uploads[0].thumbnail_url }}" alt="Preview" class="h-full w-full object-cover" />
+                            {% else %}
+                                <div class="flex h-full items-center justify-center">
+                                    <svg class="h-16 w-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Template suggestion -->
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <div class="text-sm text-zinc-300">Suggested template</div>
+                                <div class="font-medium">Slideshow — Clean Cinematic</div>
+                            </div>
+                            {% if user %}
+                                <button
+                                    @click="startRender()"
+                                    class="flex h-10 items-center rounded-lg bg-white/10 px-4 text-sm text-white ring-1 ring-white/15 transition hover:bg-white/15"
+                                >
+                                    Start
+                                </button>
+                            {% else %}
+                                <a href="/register" class="flex h-10 items-center rounded-lg bg-white/10 px-4 text-sm text-white ring-1 ring-white/15 transition hover:bg-white/15">
+                                    Start
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Recent uploads grid -->
+                        <div class="mt-6 grid grid-cols-3 gap-3">
+                            {% if user and recent_uploads %}
+                                {% for upload in recent_uploads[:6] %}
+                                    <div class="h-16 overflow-hidden rounded-lg bg-white/6 ring-1 ring-white/10">
+                                        {% if upload.thumbnail_url %}
+                                            <img src="{{ upload.thumbnail_url }}" alt="Upload" class="h-full w-full object-cover" />
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                {% for i in range(6) %}
+                                    <div class="h-16 rounded-lg bg-white/6 ring-1 ring-white/10"></div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Alpine.js component logic -->
+    <script>
+        function landingPage() {
+            return {
+                // Floating tiles data (6-8 tiles for visual interest)
+                floatingTiles: [
+                    { x: 15, y: 15, color1: 'rgba(91,127,255,0.4)', color2: 'rgba(147,51,234,0.2)', delay: 0 },
+                    { x: 75, y: 25, color1: 'rgba(147,51,234,0.4)', color2: 'rgba(91,127,255,0.2)', delay: 1.2 },
+                    { x: 25, y: 55, color1: 'rgba(59,130,246,0.4)', color2: 'rgba(91,127,255,0.2)', delay: 2.4 },
+                    { x: 85, y: 65, color1: 'rgba(91,127,255,0.4)', color2: 'rgba(59,130,246,0.2)', delay: 3.6 },
+                    { x: 45, y: 35, color1: 'rgba(147,51,234,0.3)', color2: 'rgba(91,127,255,0.3)', delay: 1.8 },
+                    { x: 60, y: 75, color1: 'rgba(91,127,255,0.35)', color2: 'rgba(147,51,234,0.25)', delay: 0.6 },
+                    { x: 10, y: 80, color1: 'rgba(59,130,246,0.35)', color2: 'rgba(91,127,255,0.25)', delay: 3 },
+                    { x: 90, y: 10, color1: 'rgba(147,51,234,0.35)', color2: 'rgba(59,130,246,0.25)', delay: 4.2 },
+                ],
+
+                // Start render action
+                startRender() {
+                    {% if user %}
+                        window.location.href = '/projects/new';
+                    {% else %}
+                        window.location.href = '/register';
+                    {% endif %}
+                }
+            }
+        }
+    </script>
+</body>
+</html>

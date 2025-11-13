@@ -190,7 +190,8 @@ class AuthService:
             )
 
         # Check trial expiration
-        if user.trial_ends_at and user.trial_ends_at < datetime.utcnow():
+        from datetime import timezone
+        if user.trial_ends_at and user.trial_ends_at < datetime.now(timezone.utc):
             if user.subscription_tier == SubscriptionTier.FREE:
                 logger.warning("trial_expired", user_id=user.id, email=user.email)
                 # Don't block login, but they'll see limited functionality
@@ -324,7 +325,8 @@ class AuthService:
             >>> if status["is_trial_active"]:
             ...     print(f"Trial expires in {status['days_remaining']} days")
         """
-        now = datetime.utcnow()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
 
         if not user.trial_ends_at:
             return {
