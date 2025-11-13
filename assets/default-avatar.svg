@@ -1,0 +1,32 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle with Gradient -->
+  <defs>
+    <linearGradient id="avatarGrad" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B7FFF"/>
+      <stop offset="1" stop-color="#9333EA"/>
+    </linearGradient>
+    <!-- Subtle noise texture -->
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feBlend mode="overlay" in="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- Base Circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#avatarGrad)"/>
+
+  <!-- Glassmorphism Overlay -->
+  <circle cx="128" cy="128" r="128" fill="white" opacity="0.1"/>
+
+  <!-- User Icon with Modern Geometric Style -->
+  <!-- Head -->
+  <circle cx="128" cy="96" r="36" fill="white" opacity="0.9"/>
+
+  <!-- Shoulders/Body -->
+  <path d="M 64 180 Q 64 140 128 140 Q 192 140 192 180 L 192 200 Q 192 210 180 210 L 76 210 Q 64 210 64 200 Z"
+        fill="white" opacity="0.9"/>
+
+  <!-- Subtle shine effect -->
+  <circle cx="145" cy="85" r="8" fill="white" opacity="0.4"/>
+</svg>

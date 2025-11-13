@@ -1,0 +1,57 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="driveGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B7FFF"/>
+      <stop offset="1" stop-color="#9333EA"/>
+    </linearGradient>
+    <filter id="driveGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle with gradient -->
+  <circle cx="60" cy="60" r="55" fill="url(#driveGrad)" opacity="0.15"/>
+
+  <!-- Cloud shape -->
+  <g transform="translate(30, 35)" filter="url(#driveGlow)">
+    <!-- Cloud body -->
+    <path d="M 15 35 Q 10 35 10 30 Q 10 15 20 10 Q 25 5 35 10 Q 45 5 50 10 Q 60 15 60 30 Q 60 35 55 35 Z"
+          fill="url(#driveGrad)" opacity="0.9"/>
+
+    <!-- Glass overlay -->
+    <path d="M 15 35 Q 10 35 10 30 Q 10 15 20 10 Q 25 5 35 10 Q 45 5 50 10 Q 60 15 60 30 Q 60 35 55 35 Z"
+          fill="white" opacity="0.1"/>
+
+    <!-- Folder icon inside cloud -->
+    <g transform="translate(22, 20)">
+      <path d="M 0 5 L 0 20 Q 0 22 2 22 L 24 22 Q 26 22 26 20 L 26 7 Q 26 5 24 5 L 15 5 L 12 2 L 2 2 Q 0 2 0 4 Z"
+            fill="white" opacity="0.9"/>
+      <!-- Folder tab -->
+      <path d="M 2 2 L 12 2 L 15 5 L 2 5 Q 0 5 0 3 Z"
+            fill="white" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- Connection dots (representing sync) -->
+  <g opacity="0.6">
+    <circle cx="20" cy="75" r="2" fill="#5B7FFF"/>
+    <circle cx="100" cy="75" r="2" fill="#9333EA"/>
+    <circle cx="60" cy="95" r="2" fill="#7C3AED"/>
+  </g>
+
+  <!-- Connecting lines -->
+  <g opacity="0.3">
+    <line x1="20" y1="75" x2="55" y2="70" stroke="#5B7FFF" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="65" y1="70" x2="100" y2="75" stroke="#9333EA" stroke-width="1" stroke-dasharray="2 2"/>
+  </g>
+
+  <!-- Sparkle effect -->
+  <g opacity="0.8">
+    <path d="M 85 25 L 87 30 L 92 32 L 87 34 L 85 39 L 83 34 L 78 32 L 83 30 Z" fill="#5B7FFF"/>
+    <path d="M 30 20 L 31 23 L 34 24 L 31 25 L 30 28 L 29 25 L 26 24 L 29 23 Z" fill="#9333EA"/>
+  </g>
+</svg>

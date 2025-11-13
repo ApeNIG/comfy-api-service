@@ -1,0 +1,116 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main gradient -->
+    <linearGradient id="mainGrad" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B7FFF" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#9333EA" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Card gradients -->
+    <linearGradient id="card1" x1="0" y1="0" x2="200" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B7FFF"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+
+    <linearGradient id="card2" x1="0" y1="0" x2="200" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#9333EA"/>
+    </linearGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Glass effect -->
+    <filter id="glass">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.3 0"/>
+    </filter>
+  </defs>
+
+  <!-- Background subtle grid -->
+  <g opacity="0.03">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="white"/>
+    </pattern>
+    <rect width="800" height="600" fill="url(#grid)"/>
+  </g>
+
+  <!-- Ambient light circles -->
+  <circle cx="200" cy="150" r="150" fill="#5B7FFF" opacity="0.08" filter="url(#glow)"/>
+  <circle cx="600" cy="400" r="120" fill="#9333EA" opacity="0.08" filter="url(#glow)"/>
+
+  <!-- Main illustration: Floating cards representing workflow -->
+
+  <!-- Card 1: Input (top left) -->
+  <g transform="translate(150, 100)" filter="url(#glow)">
+    <rect width="180" height="140" rx="16" fill="url(#card1)" opacity="0.9"/>
+    <rect width="180" height="140" rx="16" fill="white" opacity="0.05"/>
+    <!-- Image icon -->
+    <rect x="40" y="35" width="100" height="70" rx="8" fill="white" opacity="0.2"/>
+    <circle cx="70" cy="60" r="12" fill="white" opacity="0.3"/>
+    <path d="M 60 85 L 80 65 L 120 95" stroke="white" stroke-width="4" opacity="0.3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Arrow connector 1 -->
+  <g transform="translate(330, 170)" opacity="0.4">
+    <path d="M 0 0 L 80 0" stroke="#5B7FFF" stroke-width="3" stroke-dasharray="8 4"/>
+    <polygon points="80,-5 90,0 80,5" fill="#5B7FFF"/>
+  </g>
+
+  <!-- Card 2: Processing (center) -->
+  <g transform="translate(410, 80)" filter="url(#glow)">
+    <rect width="200" height="160" rx="16" fill="url(#card2)" opacity="0.9"/>
+    <rect width="200" height="160" rx="16" fill="white" opacity="0.05"/>
+    <!-- AI brain icon -->
+    <circle cx="100" cy="80" r="40" fill="white" opacity="0.2"/>
+    <circle cx="85" cy="75" r="6" fill="white" opacity="0.4"/>
+    <circle cx="115" cy="75" r="6" fill="white" opacity="0.4"/>
+    <!-- Neural network lines -->
+    <path d="M 70 70 Q 100 50 130 70" stroke="white" stroke-width="2" opacity="0.3" fill="none"/>
+    <path d="M 70 90 Q 100 110 130 90" stroke="white" stroke-width="2" opacity="0.3" fill="none"/>
+    <!-- Sparkles -->
+    <circle cx="60" cy="50" r="3" fill="white" opacity="0.6"/>
+    <circle cx="140" cy="110" r="3" fill="white" opacity="0.6"/>
+  </g>
+
+  <!-- Arrow connector 2 -->
+  <g transform="translate(610, 160)" opacity="0.4">
+    <path d="M 0 0 L 0 80" stroke="#9333EA" stroke-width="3" stroke-dasharray="8 4"/>
+    <polygon points="-5,80 0,90 5,80" fill="#9333EA"/>
+  </g>
+
+  <!-- Card 3: Output (bottom right) -->
+  <g transform="translate(510, 250)" filter="url(#glow)">
+    <rect width="180" height="140" rx="16" fill="url(#card1)" opacity="0.9"/>
+    <rect width="180" height="140" rx="16" fill="white" opacity="0.05"/>
+    <!-- Check icon -->
+    <circle cx="90" cy="70" r="35" fill="white" opacity="0.2"/>
+    <path d="M 65 70 L 80 85 L 115 55" stroke="white" stroke-width="5" opacity="0.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Floating decorative elements -->
+  <g opacity="0.3">
+    <!-- Small circles -->
+    <circle cx="120" cy="400" r="4" fill="#5B7FFF"/>
+    <circle cx="680" cy="150" r="6" fill="#9333EA"/>
+    <circle cx="250" cy="500" r="5" fill="#5B7FFF"/>
+    <circle cx="650" cy="500" r="4" fill="#9333EA"/>
+
+    <!-- Small rectangles -->
+    <rect x="100" y="250" width="8" height="8" rx="2" fill="#5B7FFF" transform="rotate(15 104 254)"/>
+    <rect x="700" y="300" width="10" height="10" rx="2" fill="#9333EA" transform="rotate(-20 705 305)"/>
+  </g>
+
+  <!-- Code-like lines (subtle) -->
+  <g opacity="0.1">
+    <line x1="50" y1="480" x2="150" y2="480" stroke="white" stroke-width="2"/>
+    <line x1="50" y1="495" x2="120" y2="495" stroke="white" stroke-width="2"/>
+    <line x1="50" y1="510" x2="140" y2="510" stroke="white" stroke-width="2"/>
+  </g>
+</svg>
